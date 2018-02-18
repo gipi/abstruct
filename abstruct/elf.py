@@ -1,40 +1,36 @@
 from .core import *
+from .fields import *
 
 
 class ElfHeader(Chunk):
-    fields = (
-        ('e_ident',     StringField(16, default='\x7fELF\x01\x01\x01')), # FIXME
-        ('e_type',      StructField('H', default=0x2)), # ET_EXEC
-        ('e_machine',   StructField('H', default=0x3)), # EM_386
-        ('e_version',   StructField('I', default=0x1)), # Version 1
-        ('e_entry',     'I'),
-        ('e_phoff',     'I'),
-        ('e_shoff',     'I'),
-        ('e_flags',     'I'),
-        ('e_ehsize',    'H'),
-        ('e_phentsize', 'H'),
-        ('e_phnum',     'H'),
-        ('e_shentsize', 'H'),
-        ('e_shnum',     'H'),
-        ('e_shstrndx',  'H'),
-    )
+    e_ident     = StringField(16, default=b'\x7fELF\x01\x01\x01') # FIXME
+    e_type      = StructField('H', default=0x2) # ET_EXEC
+    e_machine   = StructField('H', default=0x3) # EM_386
+    e_version   = StructField('I', default=0x1) # Version 1
+    e_entry     = StructField('I') # Version 1'I'
+    e_phoff     = StructField('I') # Version 1'I'
+    e_shoff     = StructField('I') # Version 1'I'
+    e_flags     = StructField('I') # Version 1'I'
+    e_ehsize    = StructField('H') # Version 1'H'
+    e_phentsize = StructField('H') # Version 1'H'
+    e_phnum     = StructField('H') # Version 1'H'
+    e_shentsize = StructField('H') # Version 1'H'
+    e_shnum     = StructField('H') # Version 1'H'
+    e_shstrndx  = StructField('H') # Version 1'H'
 
 class SectionHeader(Chunk):
-    fields = (
-        ('sh_name',      'i'),
-        ('sh_type',      'i'),
-        ('sh_flags',     'i'),
-        ('sh_addr',      'i'),
-        ('sh_offset',    'i'),
-        ('sh_size',      'i'),
-        ('sh_link',      'i'),
-        ('sh_info',      'i'),
-        ('sh_addralign', 'i'),
-        ('sh_entsize',   'i'),
-    )
+        sh_name=      StructField('i')
+        sh_type=      StructField('i')
+        sh_flags=     StructField('i')
+        sh_addr=      StructField('i')
+        sh_offset=    StructField('i')
+        sh_size=      StructField('i')
+        sh_link=      StructField('i')
+        sh_info=      StructField('i')
+        sh_addralign= StructField('i')
+        sh_entsize=   StructField('i')
 
 class ElfFile(Chunk):
-    fields = (
-        ('elf_header', ElfHeader()),
-    )
+        elf_header = ElfHeader()
+        sections =  ArrayField(SectionHeader)
 

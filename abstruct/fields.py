@@ -1,5 +1,8 @@
 import struct
 
+from .properties import Dependencies
+
+
 class MetaField(type):
     def __init__(cls, names, bases, ns):
         mandatory_methods = [
@@ -20,6 +23,7 @@ class Field(metaclass=MetaField):
 
     def contribute_to_chunk(self, cls, name):
         setattr(cls, name, self)
+        cls.set_offset(name, self.offset)
 
     def pack(self, stream=None):
         raise NotImplemented('you need to implement this in the subclass')
@@ -42,7 +46,8 @@ class StructField(Field):
     def pack(self, stream=None):
         return struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
 
-    def unpack(self, value):
+    def unpack(self, stream):
+        value = stream.read(self.size())
         self.value = struct.unpack('%s%s' % ('<' if self.little_endian else '>', self.format), value)[0]
 
 
@@ -72,8 +77,8 @@ class StringField(Field):
     def pack(self, stream=None):
         return self.value
 
-    def unpack(self, value):
-        self.value = value[:self.n]
+    def unpack(self, stream):
+        self.value = stream.read(self.n)
 
 
 class StringNullTerminatedField(Field):
@@ -89,14 +94,24 @@ class StringNullTerminatedField(Field):
 class ArrayField(Field):
     '''Un/Pack an array of Chunks'''
     def __init__(self, field_cls, n=0, **kw):
-        self.n = n
         self.field_cls = field_cls
 
+        if isinstance(n, str):
+            n = Dependencies(n)
+
+        if isinstance(n, Dependencies):
+            self.n = n
+            #self.dependencies.append(self.n)
+        elif isinstance(n, int):
+            self.n = n
+        else:
+            raise Exception('n must be of the right type')
+
+
         if 'default' not in kw:
-            if n > 0:
+            kw['default'] = []
+            if isinstance(n, int) and n > 0:
                 kw['default'] = [self.field_cls()]*self.n
-            else:
-                kw['default'] = []
 
         super(ArrayField, self).__init__(**kw)
 
@@ -104,7 +119,7 @@ class ArrayField(Field):
         self.value = default
 
     def count(self):
-        return len(self.value)
+        return self.n
 
     def size(self):
         size = 0
@@ -112,6 +127,9 @@ class ArrayField(Field):
             size += element.size()
 
         return size
+
+    def setn(self, n):
+        self.n = n
 
     def pack(self, stream=None):
         data = b''
@@ -125,6 +143,7 @@ class ArrayField(Field):
         index = 0
 
         for element in self.value:
+            logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, index))
             element.unpack(stream[index:])
             index += element.size()
 

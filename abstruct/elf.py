@@ -1,5 +1,7 @@
 from .core import *
 from .fields import *
+from .properties import Offset
+
 
 
 class ElfHeader(Chunk):
@@ -32,5 +34,5 @@ class SectionHeader(Chunk):
 
 class ElfFile(Chunk):
         elf_header = ElfHeader()
-        sections =  ArrayField(SectionHeader)
+        sections =  ArrayField(SectionHeader, n='elf_header.sh_num', offset=Offset('elf_header.e_shoff'))
 

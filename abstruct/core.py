@@ -1,6 +1,12 @@
+import logging
 import struct
-from .fields import *
 
+from .fields import *
+from .streams import Stream
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class MetaChunk(type):
@@ -33,15 +39,32 @@ class MetaChunk(type):
 
 # TODO: add compliant() to check chunk can decode (think 32 vs 64 bit ELF)
 class Chunk(metaclass=MetaChunk):
+    _dependencies = {}
+    _offsets = {}
 
+    # TODO: factorize with Field()
     def contribute_to_chunk(self, cls, name):
         setattr(cls, name, self)
+        cls.set_offset(name, self.offset)
 
-    def __init__(self):
-        self._dependencies = {}
+    def __init__(self, filepath=None, offset=None):
+        self.stream = Stream(filepath) if filepath else filepath
+        self.offset = offset
 
-    def add_relation(self, a, b):
-        '''Rememebers relations between childs'''
+        if self.stream:
+            self.unpack(self.stream)
+
+    @classmethod
+    def add_dependencies(cls, father, child_name, deps):
+        '''Rememebers relations between childs.
+        We need to remember both r/w side.'''
+        for dep in deps:
+            # dependencies are indexed by the src field name
+            cls._dependencies[child_name] = dep
+
+    @classmethod
+    def set_offset(cls, field_name, offset):
+        cls._offsets[field_name] = offset
 
     def __str__(self):
         msg = ''
@@ -49,6 +72,14 @@ class Chunk(metaclass=MetaChunk):
             field = getattr(self, field_name)
             msg += '%s: %s\n' % (field_name, field)
         return msg
+
+    def resolve_offset_for_field(self, name):
+        offset = self._offsets[name]
+
+        if not offset:
+            return offset
+
+        return offset.resolve(self)
 
     def size(self):
         size = 0
@@ -69,15 +100,15 @@ class Chunk(metaclass=MetaChunk):
         return value
 
     def unpack(self, stream):
-        index = 0
-
-        data = stream # FIXME
-
         for field_name in self.field_ordering:
+            logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
-            size = field.size()
 
-            field.unpack(data[index:index + size])
+            # setup the offset for this chunk
+            offset = self.resolve_offset_for_field(field_name)
+            if offset:
+                stream.seek(offset)
 
-            index += size
+            field.unpack(stream)
+
 

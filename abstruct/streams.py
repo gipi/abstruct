@@ -20,6 +20,9 @@ class Stream(object):
     def __getattr__(self, name):
         return getattr(self.obj, name)
 
+    def __del__(self):
+        self.obj.close()
+
     def init_str(self):
         '''We think this is a path'''
         self.obj = open(self.obj, 'rb')

@@ -64,7 +64,7 @@ class ELFTest(unittest.TestCase):
 
     def tearDown(self):
         logger.debug('removing path \'%s\'' % self.path)
-        #shutil.rmtree(self.path)
+        shutil.rmtree(self.path)
 
     def test_empty(self):
         elf = ElfFile()

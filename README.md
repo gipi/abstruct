@@ -14,6 +14,7 @@ The API will be change very heavily in future. It uses python3.
 ## Roadmap
 
  - [x] read ``ELF`` header
+ - [ ] add check for Field and Chunk
  - [ ] resolve dependencies between fields
  - [ ] write
 

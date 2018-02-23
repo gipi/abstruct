@@ -35,6 +35,6 @@ class Stream(object):
         elif isinstance(offset, int):
             real_offset = offset
         else:
-            raise ValueError('wrong kind of offset (\'%s\') is used' % offset.__class__.__name__)
+            raise ValueError('\'%s\' is the wrong kind of offset to use' % offset.__class__.__name__)
 
         self.obj.seek(real_offset)

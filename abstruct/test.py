@@ -55,6 +55,7 @@ class FieldsTests(unittest.TestCase):
 
         self.assertTrue(hasattr(d, 'chunks'))
         self.assertEqual(len(d.chunks.value), 3)
+        self.assertTrue(isinstance(d.chunks.value, list))
 
 
 class ELFTest(unittest.TestCase):

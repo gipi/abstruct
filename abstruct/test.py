@@ -6,12 +6,32 @@ import tempfile
 import unittest
 
 from .elf import ElfFile
+from .core import Chunk, Meta
+from .fields import StructField, RealStructField
 
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
+class CoreTests(unittest.TestCase):
+    def test_meta(self):
+        class Dummy(Chunk):
+            field = StructField('i')
+
+        class Dummy2(Chunk):
+            field2 = StructField('i')
+
+        d = Dummy()
+        d2 = Dummy2()
+
+        self.assertTrue(hasattr(d, '_meta'))
+        self.assertTrue(isinstance(d._meta, Meta))
+        self.assertEqual(len(d._meta.fields), 1)
+        self.assertTrue(hasattr(d, 'field'))
+        self.assertTrue(isinstance(d.field, RealStructField))
+        self.assertEqual(len(d2._meta.fields), 1)
 
 class ELFTest(unittest.TestCase):
     def setUp(self):

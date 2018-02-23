@@ -1,44 +1,62 @@
 import struct
 
-from .properties import Dependencies
+from .properties import Dependency
 
+'''
+The ratio here is that since the instances at which are attacched
+the fields need to have separate instances to interact with, we need
+the XFIeld() associated to the chunk to be constructor for the XChunk().
+'''
 
-class MetaField(type):
-    def __init__(cls, names, bases, ns):
-        mandatory_methods = [
-            'init', # FIXME: maybe use only "default" __init__ param
-            'pack',
-        ]
-        for method in mandatory_methods:
-            if method not in ns.keys() and names != 'Field':
-                raise ValueError('you must implement %s() method for the class \'%s\'' % (method, names))
-
-class Field(metaclass=MetaField):
-    def __init__(self, name=None, little_endian=True, default=None, offset=None):
-        self.name = name
-        self.little_endian = little_endian
+class Field(object):
+    real = None
+    def __init__(self, *args, offset=None, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
         self.offset = offset
 
-        self.init(default=default)
-
     def contribute_to_chunk(self, cls, name):
-        setattr(cls, name, self)
+        cls._meta.fields.append((name, self))
         cls.set_offset(name, self.offset)
 
-    def pack(self, stream=None):
-        raise NotImplemented('you need to implement this in the subclass')
+    def __call__(self, father):
+        if not self.real:
+            raise AttributeError('property \'real\' is None')
+        return self.real(*self.args, father=father, **self.kwargs)
+
+class RealField(object):
+    def __init__(self, *args, father=None, default=None, offset=None, **kwargs):
+        self.father = father
+        self.default = default
+        self.offset = offset
+
+        self.init()
 
     def __str__(self):
         return '%s' % (self.value)
 
+    def __getattribute__(self, name):
+        '''If the field is a Field then return directly the 'value' attribute'''
+        field = super().__getattribute__(name)
+        if isinstance(field, Dependency):
+            return field.resolve()
 
-class StructField(Field):
+        return field
+
+    def pack(self, stream=None):
+        raise NotImplemented('you need to implement this in the subclass')
+
+    def unpack(self, stream=None):
+        raise NotImplemented('you need to implement this in the subclass')
+
+
+class RealStructField(RealField):
     def __init__(self, format, default=0, **kw):
         self.format = format
-        super(StructField, self).__init__(default=default, **kw)
+        super().__init__(default=default, **kw)
 
-    def init(self, default):
-        self.value = default
+    def init(self):
+        self.value = self.default
 
     def size(self):
         return struct.calcsize(self.format)
@@ -51,8 +69,11 @@ class StructField(Field):
         self.value = struct.unpack('%s%s' % ('<' if self.little_endian else '>', self.format), value)[0]
 
 
-class StringField(Field):
-    '''This in an array of "n" char with padding'''
+class StructField(Field):
+    real = RealStructField
+
+
+class RealStringField(RealField):
     def __init__(self, n, padding=0, **kw):
         self.n = n
         self.padding = padding
@@ -60,16 +81,14 @@ class StringField(Field):
         if 'default' not in kw:
             kw['default'] = b'\x00'*n
 
-        super(StringField, self).__init__(**kw)
+        super().__init__(**kw)
 
-    def init(self, default):
-        padding = self.n - len(default)
+    def init(self):
+        padding = self.n - len(self.default)
         if padding < 0:
             raise ValueError('the default is longer than the "n" parameter')
 
-        default = default + b'\x00'*padding
-
-        self.value = default
+        self.value = self.default + b'\x00'*padding
 
     def size(self):
         return len(self.value)
@@ -81,9 +100,13 @@ class StringField(Field):
         self.value = stream.read(self.n)
 
 
+class StringField(Field):
+    '''This in an array of "n" char with padding'''
+    real = RealStringField
+
 class StringNullTerminatedField(Field):
     def __init__(self, default='\x00', **kw):
-        super(StringField, self).__init__(default=default, **kw)
+        super().__init__(default=default, **kw)
 
     def init(self, default):
         self.value = default
@@ -91,7 +114,7 @@ class StringNullTerminatedField(Field):
     def pack(self, stream=None):
         return self.value
 
-class ArrayField(Field):
+class RealArrayField(RealField):
     '''Un/Pack an array of Chunks'''
     def __init__(self, field_cls, n=0, **kw):
         self.field_cls = field_cls
@@ -113,10 +136,10 @@ class ArrayField(Field):
             if isinstance(n, int) and n > 0:
                 kw['default'] = [self.field_cls()]*self.n
 
-        super(ArrayField, self).__init__(**kw)
+        super().__init__(**kw)
 
-    def init(self, default):
-        self.value = default
+    def init(self):
+        self.value = self.default
 
     def count(self):
         return self.n
@@ -146,4 +169,7 @@ class ArrayField(Field):
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, index))
             element.unpack(stream[index:])
             index += element.size()
+
+class ArrayField(Field):
+    real = RealArrayField
 

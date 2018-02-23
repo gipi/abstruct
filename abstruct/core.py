@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+class Meta(object):
+    def __init__(self):
+        self.fields = []
+
 class MetaChunk(type):
     def __new__(cls, names, bases , attrs):
         '''
@@ -20,6 +24,8 @@ class MetaChunk(type):
         }
 
         new_cls = super(MetaChunk, cls).__new__(cls, names, bases, new_ns)
+
+        new_cls._meta = Meta()
 
         for obj_name, obj in attrs.items():
             new_cls.add_to_class(obj_name, obj)
@@ -33,9 +39,6 @@ class MetaChunk(type):
         else:
             setattr(cls, name, value)
 
-    def __init__(cls, names, bases, namespaces):
-        pass
-
 
 # TODO: add compliant() to check chunk can decode (think 32 vs 64 bit ELF)
 class Chunk(metaclass=MetaChunk):
@@ -44,7 +47,6 @@ class Chunk(metaclass=MetaChunk):
 
     # TODO: factorize with Field()
     def contribute_to_chunk(self, cls, name):
-        setattr(cls, name, self)
         cls.set_offset(name, self.offset)
 
     def __init__(self, filepath=None, offset=None):
@@ -53,6 +55,10 @@ class Chunk(metaclass=MetaChunk):
 
         if self.stream:
             self.unpack(self.stream)
+
+        for name, field_constructor in self.__class__._meta.fields:
+            logger.debug('field \'%s\' initialized' % name)
+            setattr(self, name, field_constructor(self))
 
     @classmethod
     def add_dependencies(cls, father, child_name, deps):

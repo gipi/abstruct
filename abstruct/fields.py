@@ -118,18 +118,10 @@ class RealArrayField(RealField):
     '''Un/Pack an array of Chunks'''
     def __init__(self, field_cls, n=0, **kw):
         self.field_cls = field_cls
+        self.n = n
 
-        if isinstance(n, str):
-            n = Dependencies(n)
-
-        if isinstance(n, Dependencies):
-            self.n = n
-            #self.dependencies.append(self.n)
-        elif isinstance(n, int):
-            self.n = n
-        else:
-            raise Exception('n must be of the right type')
-
+        if not (isinstance(n, Dependency) or isinstance(n, int)):
+            raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
 
         if 'default' not in kw:
             kw['default'] = []

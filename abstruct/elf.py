@@ -1,38 +1,38 @@
 from .core import *
-from .fields import *
+from . import fields
 from .properties import Offset
 
 
 
 class ElfHeader(Chunk):
-    e_ident     = StringField(16, default=b'\x7fELF\x01\x01\x01') # FIXME
-    e_type      = StructField('H', default=0x2) # ET_EXEC
-    e_machine   = StructField('H', default=0x3) # EM_386
-    e_version   = StructField('I', default=0x1) # Version 1
-    e_entry     = StructField('I') # Version 1'I'
-    e_phoff     = StructField('I') # Version 1'I'
-    e_shoff     = StructField('I') # Version 1'I'
-    e_flags     = StructField('I') # Version 1'I'
-    e_ehsize    = StructField('H') # Version 1'H'
-    e_phentsize = StructField('H') # Version 1'H'
-    e_phnum     = StructField('H') # Version 1'H'
-    e_shentsize = StructField('H') # Version 1'H'
-    e_shnum     = StructField('H') # Version 1'H'
-    e_shstrndx  = StructField('H') # Version 1'H'
+    e_ident     = fields.StringField(16, default=b'\x7fELF\x01\x01\x01') # FIXME: there are sub-fields
+    e_type      = fields.StructField('H', default=0x2) # ET_EXEC
+    e_machine   = fields.StructField('H', default=0x3) # EM_386
+    e_version   = fields.StructField('I', default=0x1) # Version 1
+    e_entry     = fields.StructField('I')
+    e_phoff     = fields.StructField('I')
+    e_shoff     = fields.StructField('I')
+    e_flags     = fields.StructField('I')
+    e_ehsize    = fields.StructField('H')
+    e_phentsize = fields.StructField('H')
+    e_phnum     = fields.StructField('H')
+    e_shentsize = fields.StructField('H')
+    e_shnum     = fields.StructField('H')
+    e_shstrndx  = fields.StructField('H')
 
 class SectionHeader(Chunk):
-        sh_name=      StructField('i')
-        sh_type=      StructField('i')
-        sh_flags=     StructField('i')
-        sh_addr=      StructField('i')
-        sh_offset=    StructField('i')
-        sh_size=      StructField('i')
-        sh_link=      StructField('i')
-        sh_info=      StructField('i')
-        sh_addralign= StructField('i')
-        sh_entsize=   StructField('i')
+        sh_name      = fields.StructField('i')
+        sh_type      = fields.StructField('i')
+        sh_flags     = fields.StructField('i')
+        sh_addr      = fields.StructField('i')
+        sh_offset    = fields.StructField('i')
+        sh_size      = fields.StructField('i')
+        sh_link      = fields.StructField('i')
+        sh_info      = fields.StructField('i')
+        sh_addralign = fields.StructField('i')
+        sh_entsize   = fields.StructField('i')
 
 class ElfFile(Chunk):
-        elf_header = ElfHeader()
-        sections =  ArrayField(SectionHeader, n='elf_header.sh_num', offset=Offset('elf_header.e_shoff'))
+        elf_header = fields.ElfHeaderField()
+        sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.sh_num'), offset=Offset('elf_header.e_shoff'))
 

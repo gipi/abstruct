@@ -30,6 +30,17 @@ class MetaChunk(type):
         for obj_name, obj in attrs.items():
             new_cls.add_to_class(obj_name, obj)
 
+        # create a Field to use this Chunk
+        from . import fields as module_field
+
+        real_name = '%sField' % new_cls.__name__
+
+        logger.debug('creating class \'%s\'' % real_name)
+
+        RealChunkClass = type(real_name, (object,), {})
+        RealChunkClass.real = new_cls
+
+        setattr(module_field, real_name, RealChunkClass)
         return new_cls
 
     def add_to_class(cls, name, value):

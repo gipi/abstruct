@@ -7,7 +7,7 @@ import unittest
 
 from .elf import ElfFile
 from .core import Chunk, Meta
-from .fields import StructField, RealStructField
+from . import fields
 
 
 logging.basicConfig()
@@ -18,10 +18,10 @@ logger.setLevel(logging.DEBUG)
 class CoreTests(unittest.TestCase):
     def test_meta(self):
         class Dummy(Chunk):
-            field = StructField('i')
+            field = fields.StructField('i')
 
         class Dummy2(Chunk):
-            field2 = StructField('i')
+            field2 = fields.StructField('i')
 
         d = Dummy()
         d2 = Dummy2()
@@ -30,8 +30,32 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(isinstance(d._meta, Meta))
         self.assertEqual(len(d._meta.fields), 1)
         self.assertTrue(hasattr(d, 'field'))
-        self.assertTrue(isinstance(d.field, RealStructField))
+        self.assertTrue(isinstance(d.field, fields.RealStructField))
         self.assertEqual(len(d2._meta.fields), 1)
+
+class FieldsTests(unittest.TestCase):
+    def test_struct(self):
+        class DummyFile(Chunk):
+            field_wo_default = fields.StructField('I')
+            field_w_default  = fields.StructField('I', default=0xdead)
+
+        df = DummyFile()
+        self.assertEqual(df.field_wo_default.value, 0)
+        self.assertEqual(df.field_w_default.value, 0xdead)
+
+    def test_array(self):
+        class DummyChunk(Chunk):
+            field_a = fields.StructField("I")
+            field_b = fields.StructField("I")
+
+        class DummyFile(Chunk):
+            chunks = fields.ArrayField(DummyChunk, n=3)
+
+        d = DummyFile()
+
+        self.assertTrue(hasattr(d, 'chunks'))
+        self.assertEqual(len(d.chunks.value), 3)
+
 
 class ELFTest(unittest.TestCase):
     def setUp(self):

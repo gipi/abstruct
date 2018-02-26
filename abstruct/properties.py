@@ -31,7 +31,6 @@ class Dependency(object):
         fields_path = self.expression.split('.') # FIXME: create class FieldPath to encapsulate
 
         if fields_path[0] != '.':
-            import ipdb;ipdb.set_trace()
             field = self._get_root(instance)
             for component_name in fields_path:
                 field = getattr(field, component_name)

@@ -34,5 +34,5 @@ class SectionHeader(Chunk):
 
 class ElfFile(Chunk):
         elf_header = fields.ElfHeaderField()
-        sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.sh_num'), offset=Offset('elf_header.e_shoff'))
+        sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Offset('elf_header.e_shoff'))
 

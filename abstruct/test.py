@@ -82,6 +82,7 @@ class ELFTest(unittest.TestCase):
 
     def test_empty(self):
         elf = ElfFile()
+        self.assertEqual(elf.elf_header.e_type.value, 0x02)
 
     def test_32bits(self):
         code = '''
@@ -115,3 +116,5 @@ int main() {
 
         self.assertEqual(elf.elf_header.e_type.value, 0x03)
         self.assertEqual(elf.elf_header.e_machine.value, 0x03)
+        self.assertEqual(elf.elf_header.e_shnum.value, 30)
+        self.assertEqual(elf.sections.n, 30)

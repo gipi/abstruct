@@ -33,6 +33,19 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(isinstance(d.field, fields.RealStructField))
         self.assertEqual(len(d2._meta.fields), 1)
 
+    def test_chunk(self):
+        class Dummy(Chunk):
+            field = fields.StructField('i')
+
+        class DummyContainer(Chunk):
+            dummy = fields.DummyField()
+
+        d = DummyContainer()
+
+
+        self.assertTrue(hasattr(d, 'dummy'))
+        self.assertTrue(hasattr(d.dummy, 'field'))
+
 class FieldsTests(unittest.TestCase):
     def test_struct(self):
         class DummyFile(Chunk):

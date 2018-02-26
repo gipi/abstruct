@@ -25,10 +25,11 @@ class Field(object):
         return self.real(*self.args, father=father, **self.kwargs)
 
 class RealField(object):
-    def __init__(self, *args, father=None, default=None, offset=None, **kwargs):
+    def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, **kwargs):
         self.father = father
         self.default = default
         self.offset = offset
+        self.little_endian = little_endian
 
         self.init()
 

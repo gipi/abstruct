@@ -37,14 +37,21 @@ class MetaChunk(type):
 
         logger.debug('creating class \'%s\'' % real_name)
 
-        RealChunkClass = type(real_name, (object,), {})
-        RealChunkClass.real = new_cls
+        ChunkClass = type(real_name, (Field,), {})
+        ChunkClass.real = new_cls
 
-        setattr(module_field, real_name, RealChunkClass)
+        setattr(module_field, real_name, ChunkClass)
+
         return new_cls
+
+    # TODO: factorize with Field()
+    def contribute_to_chunk(self, cls, name):
+        cls._meta.fields.append((name, self))
+        cls.set_offset(name, self.offset)
 
     def add_to_class(cls, name, value):
         if hasattr(value, 'contribute_to_chunk'):
+            logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
             cls.field_ordering.append(name)
             value.contribute_to_chunk(cls, name)
         else:
@@ -53,23 +60,28 @@ class MetaChunk(type):
 
 # TODO: add compliant() to check chunk can decode (think 32 vs 64 bit ELF)
 class Chunk(metaclass=MetaChunk):
-    _dependencies = {}
+    '''
+    All the subclasses of this generate a XField to be used as Field()
+    for any Chunk the needs it.
+
+    NOTE: you need to import fields and then call fields.XField() otherwise
+    the fields won't be found.
+    '''
     _offsets = {}
 
-    # TODO: factorize with Field()
-    def contribute_to_chunk(self, cls, name):
-        cls.set_offset(name, self.offset)
 
-    def __init__(self, filepath=None, offset=None):
+    def __init__(self, filepath=None, offset=None, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
         self.offset = offset
-
-        if self.stream:
-            self.unpack(self.stream)
 
         for name, field_constructor in self.__class__._meta.fields:
             logger.debug('field \'%s\' initialized' % name)
             setattr(self, name, field_constructor(self))
+
+        # now we have setup all the fields necessary and we can unpack if
+        # some data is passed with the constructor
+        if self.stream:
+            self.unpack(self.stream)
 
     @classmethod
     def add_dependencies(cls, father, child_name, deps):
@@ -117,7 +129,7 @@ class Chunk(metaclass=MetaChunk):
         return value
 
     def unpack(self, stream):
-        for field_name in self.field_ordering:
+        for field_name, _ in self._meta.fields:
             logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
 

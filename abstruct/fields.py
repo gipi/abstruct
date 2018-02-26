@@ -40,7 +40,7 @@ class RealField(object):
         '''If the field is a Field then return directly the 'value' attribute'''
         field = super().__getattribute__(name)
         if isinstance(field, Dependency):
-            return field.resolve()
+            return field.resolve(self)
 
         return field
 

@@ -70,9 +70,10 @@ class Chunk(metaclass=MetaChunk):
     _offsets = {}
 
 
-    def __init__(self, filepath=None, offset=None, **kwargs):
+    def __init__(self, filepath=None, father=None, offset=None, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
         self.offset = offset
+        self.father = father
 
         for name, field_constructor in self.__class__._meta.fields:
             logger.debug('field \'%s\' initialized' % name)

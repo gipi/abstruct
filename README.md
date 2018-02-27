@@ -13,9 +13,20 @@ The API will be change very heavily in future. It uses python3.
 
 ## Roadmap
 
- - [x] read ``ELF`` header
+ - [ ] add common file formats
+   - [ ] PNG
+   - [ ] JPEG
+   - [ ] ZIP
+   - [ ] PDF
+   - [ ] ELF
+     - [x] read ``ELF`` header
+     - [ ] read ``ELF`` sections and segments
  - [ ] add check for Field and Chunk
  - [ ] resolve dependencies between fields
+   - [ ] absolute reference (``elf_header.e_shnum``)
+   - [ ] relative reference (``..field.another_field``)
+   - [ ] using operators (``section.index in sections where sh_type == SHT_STRTAB``)
+ - [ ] manage offsets
  - [ ] write
 
 ## Example

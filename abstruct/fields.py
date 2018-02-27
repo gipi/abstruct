@@ -164,12 +164,11 @@ class RealArrayField(RealField):
         return data
 
     def unpack(self, stream):
-        index = 0
-
-        for element in self.value:
-            logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, index))
-            element.unpack(stream[index:])
-            index += element.size()
+        for idx in range(self.n):
+            element = self.field_cls()
+            logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
+            element.unpack(stream)
+            self.value.append(element)
 
 class ArrayField(Field):
     real = RealArrayField

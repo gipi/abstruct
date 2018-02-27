@@ -42,6 +42,9 @@ class Dependency(object):
 
 # NOTE: we need the caller to seek() correctly a given offset
 #       if it depends on external fields
+#       It's different with respect to Dependency() since
+#       the expression is with respect to the father (probably
+#       to be fixed)
 class Offset(object):
     def __init__(self, expression):
         self.expression = expression

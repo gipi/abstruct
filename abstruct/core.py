@@ -139,6 +139,8 @@ class Chunk(metaclass=MetaChunk):
             if offset:
                 stream.seek(offset)
 
+            logger.debug('offset at %d' % stream.tell())
+
             field.unpack(stream)
 
 

@@ -1,6 +1,11 @@
+import logging
 import struct
 
 from .properties import Dependency
+
+
+logger = logging.getLogger(__name__)
+
 
 '''
 The ratio here is that since the instances at which are attacched

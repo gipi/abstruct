@@ -139,6 +139,9 @@ class RealArrayField(RealField):
     def init(self):
         self.value = self.default
 
+    def __len__(self):
+        return len(self.value)
+
     def count(self):
         return self.n
 

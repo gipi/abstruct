@@ -118,3 +118,5 @@ int main() {
         self.assertEqual(elf.elf_header.e_machine.value, 0x03)
         self.assertEqual(elf.elf_header.e_shnum.value, 30)
         self.assertEqual(elf.sections.n, 30)
+        self.assertEqual(len(elf.sections), 30)
+

@@ -1,4 +1,10 @@
+import logging
+
 from .properties import Offset
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Stream(object):
@@ -25,6 +31,7 @@ class Stream(object):
 
     def init_str(self):
         '''We think this is a path'''
+        logger.debug('opening path \'%s\'' % self.obj)
         self.obj = open(self.obj, 'rb')
 
     def seek(self, offset):

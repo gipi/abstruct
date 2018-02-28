@@ -1,5 +1,7 @@
 # Abstruct
 
+![travis build status](https://travis-ci.org/gipi/abstruct.svg?branch=master)
+
 **This is a work in progress!!**
 
 I want to create a module able to ``pack()/unpack()`` generic file format

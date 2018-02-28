@@ -21,16 +21,16 @@ class ElfHeader(Chunk):
     e_shstrndx  = fields.StructField('H')
 
 class SectionHeader(Chunk):
-        sh_name      = fields.StructField('i')
-        sh_type      = fields.StructField('i')
-        sh_flags     = fields.StructField('i')
-        sh_addr      = fields.StructField('i')
-        sh_offset    = fields.StructField('i')
-        sh_size      = fields.StructField('i')
-        sh_link      = fields.StructField('i')
-        sh_info      = fields.StructField('i')
-        sh_addralign = fields.StructField('i')
-        sh_entsize   = fields.StructField('i')
+    sh_name      = fields.StructField('i')
+    sh_type      = fields.StructField('i')
+    sh_flags     = fields.StructField('i')
+    sh_addr      = fields.StructField('i')
+    sh_offset    = fields.StructField('i')
+    sh_size      = fields.StructField('i')
+    sh_link      = fields.StructField('i')
+    sh_info      = fields.StructField('i')
+    sh_addralign = fields.StructField('i')
+    sh_entsize   = fields.StructField('i')
 
 class ElfFile(Chunk):
         elf_header = fields.ElfHeaderField()

@@ -16,6 +16,7 @@ class Stream(object):
         self._type = type(obj)
         self.flags = flags # this probably need to be a more elaborate value (like mmap)
         self.obj = obj
+        self.history = []
 
         init_method_name = 'init_%s' % self.obj.__class__.__name__
 
@@ -45,3 +46,11 @@ class Stream(object):
             raise ValueError('\'%s\' is the wrong kind of offset to use' % offset.__class__.__name__)
 
         self.obj.seek(real_offset)
+
+    # TODO: create contextmanager
+    def save(self):
+        self.history.append(self.obj.tell())
+
+    def restore(self):
+        old_seek = self.history.pop()
+        self.obj.seek(old_seek)

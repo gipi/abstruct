@@ -15,15 +15,7 @@ class Meta(object):
 
 class MetaChunk(type):
     def __new__(cls, names, bases , attrs):
-        '''
-        Uses the 'fields' attribute and attach to the new created class the relative fields.
-        '''
-
-        new_ns = {
-            'field_ordering': [],
-        }
-
-        new_cls = super(MetaChunk, cls).__new__(cls, names, bases, new_ns)
+        new_cls = super(MetaChunk, cls).__new__(cls, names, bases, {})
 
         new_cls._meta = Meta()
 
@@ -52,7 +44,6 @@ class MetaChunk(type):
     def add_to_class(cls, name, value):
         if hasattr(value, 'contribute_to_chunk'):
             logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
-            cls.field_ordering.append(name)
             value.contribute_to_chunk(cls, name)
         else:
             setattr(cls, name, value)
@@ -98,7 +89,7 @@ class Chunk(metaclass=MetaChunk):
 
     def __str__(self):
         msg = ''
-        for field_name in self.field_ordering:
+        for field_name, _ in self._meta.fields:
             field = getattr(self, field_name)
             msg += '%s: %s\n' % (field_name, field)
         return msg

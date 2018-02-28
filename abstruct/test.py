@@ -92,4 +92,6 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_shnum.value, 30)
         self.assertEqual(elf.sections.n, 30)
         self.assertEqual(len(elf.sections), 30)
+        self.assertEqual(elf.sections.value[29].sh_type.value, 3)
+        self.assertEqual(elf.sections.value[28].sh_type.value, 3)
 

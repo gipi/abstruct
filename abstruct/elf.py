@@ -32,6 +32,27 @@ class SectionHeader(Chunk):
     sh_addralign = fields.StructField('i')
     sh_entsize   = fields.StructField('i')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data = None
+
+    def unpack(self, stream):
+        super().unpack(stream)
+
+        # since can be present other fields at this
+        # offset that we need to unpack, we save
+        # the offset
+        stream.save()
+
+        # seek to the data we need
+        stream.seek(self.sh_offset.value)
+        # read it
+        self.data = stream.read(self.sh_size.value)
+
+        # and and restore the saved offset
+        stream.restore()
+
 class ElfFile(Chunk):
         elf_header = fields.ElfHeaderField()
         sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Offset('elf_header.e_shoff'))

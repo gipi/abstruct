@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-from .elf import ElfFile
+from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType
 from .core import Chunk, Meta
 from . import fields
 
@@ -74,7 +74,7 @@ class FieldsTests(unittest.TestCase):
 class ELFTest(unittest.TestCase):
     def test_empty(self):
         elf = ElfFile()
-        self.assertEqual(elf.elf_header.e_type.value, 0x02)
+        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC.value)
 
     def test_32bits(self):
         path_elf = os.path.join(os.path.dirname(__file__), 'main')
@@ -87,11 +87,11 @@ class ELFTest(unittest.TestCase):
 
         elf = ElfFile(path_elf)
 
-        self.assertEqual(elf.elf_header.e_type.value, 0x03)
-        self.assertEqual(elf.elf_header.e_machine.value, 0x03)
+        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN.value) # WHY IS COMPILED AS DYN? ALIENS!
+        self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)
         self.assertEqual(elf.elf_header.e_shnum.value, 30)
         self.assertEqual(elf.sections.n, 30)
         self.assertEqual(len(elf.sections), 30)
-        self.assertEqual(elf.sections.value[29].sh_type.value, 3)
-        self.assertEqual(elf.sections.value[28].sh_type.value, 3)
+        self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB.value)
+        self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB.value)
 

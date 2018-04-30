@@ -37,7 +37,7 @@ class RealField(object):
         self.little_endian = little_endian
         self.formatter = formatter if formatter else '%s'
 
-        self.init()
+        self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
 
     def __str__(self):
         return self.formatter % (self.value)
@@ -85,12 +85,10 @@ class RealStringField(RealField):
         self.n = n
         self.padding = padding
 
-        if 'default' not in kw:
-            kw['default'] = b'\x00'*n
-
         super().__init__(**kw)
 
     def init(self):
+        self.default = b'\x00' * self.n if not self.default else self.default
         padding = self.n - len(self.default)
         if padding < 0:
             raise ValueError('the default is longer than the "n" parameter')

@@ -30,16 +30,17 @@ class Field(object):
         return self.real(*self.args, father=father, **self.kwargs)
 
 class RealField(object):
-    def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, **kwargs):
+    def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, formatter=None, **kwargs):
         self.father = father
         self.default = default
         self.offset = offset
         self.little_endian = little_endian
+        self.formatter = formatter if formatter else '%s'
 
         self.init()
 
     def __str__(self):
-        return '%s' % (self.value)
+        return self.formatter % (self.value)
 
     def __getattribute__(self, name):
         '''If the field is a Field then return directly the 'value' attribute'''

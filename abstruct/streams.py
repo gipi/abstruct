@@ -1,3 +1,4 @@
+import io
 import logging
 
 from .properties import Offset
@@ -34,6 +35,10 @@ class Stream(object):
         '''We think this is a path'''
         logger.debug('opening path \'%s\'' % self.obj)
         self.obj = open(self.obj, 'rb')
+
+    def init_bytes(self):
+        '''We think these are raw bytes'''
+        self.obj = io.BytesIO(self.obj)
 
     def seek(self, offset):
         real_offset = None

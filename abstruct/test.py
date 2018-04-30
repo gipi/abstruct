@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType
+from .stk500 import STK500Packet
 from .core import Chunk, Meta
 from . import fields
 
@@ -94,4 +95,15 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(len(elf.sections), 30)
         self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB.value)
         self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB.value)
+
+class STK500Tests(unittest.TestCase):
+    def test_single(self):
+        stk500_packet = b'\x1b\x04\x00\x05\x0e\x01\x02\x03\x04\x05\xff'
+
+        packet = STK500Packet(stk500_packet)
+
+        self.assertEqual(packet.message_start.value, 0x1b)
+        self.assertEqual(packet.token.value, 0x0e)
+        self.assertEqual(packet.message_size.value, 5)
+        self.assertEqual(packet.message_body.value, b'\x01\x02\x03\x04\x05')
 

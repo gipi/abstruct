@@ -52,6 +52,19 @@ class Stream(object):
 
         self.obj.seek(real_offset)
 
+    def read_all(self):
+        '''Here we try to implement a method that returns all the data possible
+        FIXME: find a better way to do this.
+        '''
+        data = []
+        is_there_more = True
+        while is_there_more:
+            b = self.read(1)
+            is_there_more = (len(b) != 0)
+            data.append(b)
+
+        return b''.join(data)
+
     # TODO: create contextmanager
     def save(self):
         self.history.append(self.obj.tell())

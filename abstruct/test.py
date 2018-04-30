@@ -8,6 +8,7 @@ import unittest
 from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType
 from .stk500 import STK500Packet
 from .core import Chunk, Meta
+from .streams import Stream
 from . import fields
 
 
@@ -15,6 +16,29 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+class StreamTests(unittest.TestCase):
+    def test_bytes_stream_read_all(self):
+        data = b'\x01\x02\x03\x04\x05'
+
+        stream = Stream(data)
+
+        self.assertEqual(stream.read(1), b'\x01')
+        self.assertEqual(stream.read(1), b'\x02')
+        self.assertEqual(stream.read_all(), b'\x03\x04\x05')
+        self.assertEqual(stream.tell(), 5)
+
+    def test_file_stream_read_all(self):
+        data = b'\x01\x02\x03\x04\x05'
+        path_data = '/tmp/auaua'
+        with open(path_data, 'wb') as f:
+            f.write(data)
+
+        stream = Stream(path_data)
+
+        self.assertEqual(stream.read(1), b'\x01')
+        self.assertEqual(stream.read(1), b'\x02')
+        self.assertEqual(stream.read_all(), b'\x03\x04\x05')
+        self.assertEqual(stream.tell(), 5)
 
 class CoreTests(unittest.TestCase):
     def test_meta(self):

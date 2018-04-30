@@ -177,3 +177,13 @@ class RealArrayField(RealField):
 class ArrayField(Field):
     real = RealArrayField
 
+class RealPaddingField(RealField):
+    '''Takes as much stream as possible'''
+    def unpack(self, stream):
+        self.value = stream.read_all()
+
+    def init(self):
+        pass
+
+class PaddingField(Field):
+    real = RealPaddingField

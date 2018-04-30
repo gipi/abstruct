@@ -71,6 +71,17 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
 
+class PaddingFieldTests(unittest.TestCase):
+    def test_is_ok(self):
+        class Padda(Chunk):
+            padding = fields.PaddingField()
+
+        contents = b'\x01\x02\x03\x04\x05'
+
+        padda = Padda(contents)
+
+        self.assertEqual(padda.padding.value, contents)
+
 class FieldsTests(unittest.TestCase):
     def test_struct(self):
         class DummyFile(Chunk):

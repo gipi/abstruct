@@ -115,7 +115,8 @@ class Chunk(metaclass=MetaChunk):
         
         '''
         value = b'' if not stream else stream
-        for field_name in self.field_ordering:
+        for field_name, _ in self._meta.fields:
+            logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
             value += getattr(self, field_name).pack(stream=stream)
 
         return value

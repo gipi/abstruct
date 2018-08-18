@@ -1,6 +1,7 @@
 from enum import Enum
 
-from ..core import *
+from ..core import Chunk, Dependency
+from . import fields as Elf_fields
 from .. import fields
 from ..properties import Offset
 
@@ -61,7 +62,7 @@ class ElfSectionType(Enum):
 
 
 class ElfHeader(Chunk):
-    e_ident     = fields.StringField(16, default=b'\x7fELF\x01\x01\x01') # FIXME: there are sub-fields
+    e_ident     = fields.ElfIdentField()
     e_type      = fields.StructField('H', default=ElfType.ET_EXEC.value)
     e_machine   = fields.StructField('H', default=ElfMachine.EM_386.value)
     e_version   = fields.StructField('I', default=ElfVersion.EV_CURRENT.value)

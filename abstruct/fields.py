@@ -175,6 +175,28 @@ class RealArrayField(RealField):
 class ArrayField(Field):
     real = RealArrayField
 
+class RealSelectField(RealField):
+    '''Associate a field with a given Chunk based on a given condition'''
+    def __init__(self, fields, expression, *args, **kwargs):
+        self.fields = fields
+        self.expression = expression
+
+        super().__init__(*args, **kwargs)
+
+    def init(self):
+        pass
+
+    def unpack(self, stream):
+        select = self.expression.resolve(self)
+
+        field = self.fields[select]()
+
+        field.unpack(stream)
+
+
+class SelectField(Field):
+    real = RealSelectField
+
 class RealPaddingField(RealField):
     '''Takes as much stream as possible'''
     def unpack(self, stream):

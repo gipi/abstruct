@@ -5,7 +5,8 @@ import subprocess
 import tempfile
 import unittest
 
-from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType
+
+from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType, ElfEIClass, ElfEIData
 from .stk500 import STK500Packet
 from .core import Chunk, Meta
 from .streams import Stream
@@ -122,6 +123,14 @@ class ELFTest(unittest.TestCase):
         ]).decode('utf-8'))
 
         elf = ElfFile(path_elf)
+
+        self.assertEqual(elf.elf_header.e_ident.EI_MAG0.value, b'\x7f')
+        self.assertEqual(elf.elf_header.e_ident.EI_MAG1.value, b'E')
+        self.assertEqual(elf.elf_header.e_ident.EI_MAG2.value, b'L')
+        self.assertEqual(elf.elf_header.e_ident.EI_MAG3.value, b'F')
+        self.assertEqual(elf.elf_header.e_ident.EI_CLASS.value, ElfEIClass.ELFCLASS32.value)
+        self.assertEqual(elf.elf_header.e_ident.EI_DATA.value, ElfEIData.ELFDATA2LSB.value)
+
 
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN.value) # WHY IS COMPILED AS DYN? ALIENS!
         self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)

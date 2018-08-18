@@ -1,8 +1,8 @@
 from enum import Enum
 
-from .core import *
-from . import fields
-from .properties import Offset
+from ..core import *
+from .. import fields
+from ..properties import Offset
 
 
 class ElfType(Enum):

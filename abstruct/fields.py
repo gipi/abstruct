@@ -37,7 +37,7 @@ class RealField(object):
         self.little_endian = little_endian
         self.formatter = formatter if formatter else '%s'
 
-        self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
+        #self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
 
     def __str__(self):
         return self.formatter % (self.value)

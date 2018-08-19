@@ -74,6 +74,9 @@ class Chunk(metaclass=MetaChunk):
         # some data is passed with the constructor
         if self.stream:
             self.unpack(self.stream)
+        else:
+            for name, _  in self.__class__._meta.fields:
+                getattr(self, name).init()
 
     @classmethod
     def add_dependencies(cls, father, child_name, deps):
@@ -101,6 +104,9 @@ class Chunk(metaclass=MetaChunk):
             return offset
 
         return offset.resolve(self)
+
+    def init(self):
+        pass
 
     def size(self):
         size = 0

@@ -110,7 +110,7 @@ class Chunk(metaclass=MetaChunk):
 
     def size(self):
         size = 0
-        for field_name in self.field_ordering:
+        for field_name, _ in self._meta.fields:
             field = getattr(self, field_name)
             size += field.size()
 

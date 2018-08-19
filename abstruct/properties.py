@@ -38,7 +38,7 @@ class Dependency(object):
         # like python modules
         fields_path = self.expression.split('.') # FIXME: create class FieldPath to encapsulate
 
-        if fields_path[0] != '.':
+        if fields_path[0] != '':
             field = self._get_root(instance)
             for component_name in fields_path:
                 field = getattr(field, component_name)

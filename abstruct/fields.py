@@ -45,7 +45,7 @@ class RealField(object):
     def __getattribute__(self, name):
         '''If the field is a Field then return directly the 'value' attribute'''
         field = super().__getattribute__(name)
-        if isinstance(field, Dependency):
+        if isinstance(field, Dependency) and name != 'default': # FIXME: epic workaround
             return field.resolve(self)
 
         return field
@@ -58,9 +58,9 @@ class RealField(object):
 
 
 class RealStructField(RealField):
-    def __init__(self, format, default=0, **kw):
+    def __init__(self, format, default=0, equals_to=None, **kw):
         self.format = format
-        super().__init__(default=default, **kw)
+        super().__init__(default=default if not equals_to else equals_to, **kw)
 
     def init(self):
         self.value = self.default

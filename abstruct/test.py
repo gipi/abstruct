@@ -8,7 +8,7 @@ import unittest
 
 from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType, ElfEIClass, ElfEIData
 from .stk500 import STK500Packet
-from .core import Chunk, Meta
+from .core import Chunk, Meta, Dependency
 from .streams import Stream
 from . import fields
 
@@ -107,11 +107,20 @@ class FieldsTests(unittest.TestCase):
         self.assertEqual(len(d.chunks.value), 3)
         self.assertTrue(isinstance(d.chunks.value, list))
 
+    def test_dependency(self):
+        class DummyChunk(Chunk):
+            magic = fields.StringField(n=5, default=b"HELLO")
+            dummy_size = fields.StructField('<I', equals_to=Dependency('size'))
+
+        dummy = DummyChunk()
+
+        self.assertEqual(dummy.dummy_size.value, 9)
 
 class ELFTest(unittest.TestCase):
     def test_empty(self):
         elf = ElfFile()
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC.value)
+        self.assertEqual(elf.elf_header.e_ehsize.value, 52)
 
     def test_32bits(self):
         path_elf = os.path.join(os.path.dirname(__file__), 'main')
@@ -134,6 +143,7 @@ class ELFTest(unittest.TestCase):
 
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN.value) # WHY IS COMPILED AS DYN? ALIENS!
         self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)
+        self.assertEqual(elf.elf_header.e_ehsize.value, 52)
         self.assertEqual(elf.elf_header.e_shnum.value, 30)
         self.assertEqual(elf.sections.n, 30)
         self.assertEqual(len(elf.sections), 30)

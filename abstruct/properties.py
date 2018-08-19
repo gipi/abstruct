@@ -1,3 +1,9 @@
+import logging
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 
 class Dependency(object):
@@ -19,13 +25,15 @@ class Dependency(object):
             father = instance.father
 
             is_root = father.father is None
+            instance = father
 
         return father
 
     def resolve(self, instance):
         '''With this method we resolve the attribute with respect to the instance
         passed as argument.'''
-        field = None
+        logger.debug('trying to resolve \'%s\'' % self.expression)
+        field = prev_field = None
         # here split the expression into the components
         # like python modules
         fields_path = self.expression.split('.') # FIXME: create class FieldPath to encapsulate
@@ -37,7 +45,16 @@ class Dependency(object):
         else:
             raise AttributeError('Dependency with relative expression not yer implemented!')
 
-        return field.value
+        import inspect
+
+        value = None
+
+        if inspect.ismethod(field):
+            value = field()
+        else:
+            value = field.value
+
+        return value
 
 
 # NOTE: we need the caller to seek() correctly a given offset

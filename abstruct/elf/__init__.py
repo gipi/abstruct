@@ -70,7 +70,7 @@ class ElfHeader(Chunk):
     e_phoff     = fields.StructField('I')
     e_shoff     = fields.StructField('I')
     e_flags     = fields.StructField('I')
-    e_ehsize    = fields.StructField('H')
+    e_ehsize    = fields.StructField('H', equals_to=Dependency('size'))
     e_phentsize = fields.StructField('H')
     e_phnum     = fields.StructField('H')
     e_shentsize = fields.StructField('H')

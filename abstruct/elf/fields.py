@@ -24,13 +24,13 @@ class ElfEIData(Enum):
 
 
 class ElfIdent(Chunk):
-    EI_MAG0 = fields.StructField('c')
-    EI_MAG1 = fields.StructField('c')
-    EI_MAG2    = fields.StructField('c')
-    EI_MAG3    = fields.StructField('c')
-    EI_CLASS   = fields.StructField('B')
-    EI_DATA    = fields.StructField('B')
-    EI_VERSION = fields.StructField('B')
+    EI_MAG0 = fields.StructField('c', default=b'\x7f')
+    EI_MAG1 = fields.StructField('c', default=b'E')
+    EI_MAG2    = fields.StructField('c', default=b'L')
+    EI_MAG3    = fields.StructField('c', default=b'F')
+    EI_CLASS   = fields.StructField('B', default=ElfEIClass.ELFCLASS32.value)
+    EI_DATA    = fields.StructField('B', default=ElfEIData.ELFDATA2LSB.value)
+    EI_VERSION = fields.StructField('B', default=1)
     EI_PAD     = fields.StringField(9)
 
 

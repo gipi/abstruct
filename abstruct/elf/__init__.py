@@ -1,7 +1,7 @@
 from enum import Enum
 
 from ..core import Chunk, Dependency
-from . import fields as Elf_fields
+from .fields import *
 from .. import fields
 from ..properties import Offset
 

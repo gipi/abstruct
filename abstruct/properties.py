@@ -54,6 +54,8 @@ class Dependency(object):
         else:
             value = field.value
 
+        logger.debug('resolved with value %s' % value)
+
         return value
 
 

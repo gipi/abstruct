@@ -43,7 +43,7 @@ class Dependency(object):
             for component_name in fields_path:
                 field = getattr(field, component_name)
         else:
-            raise AttributeError('Dependency with relative expression not yer implemented!')
+            raise AttributeError('Dependency with relative expression not yet implemented!')
 
         import inspect
 

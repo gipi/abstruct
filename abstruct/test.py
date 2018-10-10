@@ -6,7 +6,12 @@ import tempfile
 import unittest
 
 
-from .elf import ElfFile, ElfType, ElfMachine, ElfSectionType, ElfEIClass, ElfEIData
+from .elf import (
+    ElfFile,
+    ElfType,
+    ElfMachine,
+    ElfSectionType, ElfEIClass, ElfEIData,
+    SectionHeader)
 from .stk500 import STK500Packet
 from .core import Chunk, Meta, Dependency
 from .streams import Stream
@@ -122,6 +127,14 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC.value)
         self.assertEqual(elf.elf_header.e_ehsize.value, 52)
 
+    def test_minimal_from_zero(self):
+        elf = ElfFile()
+        str_header = SectionHeader()
+        str_header.sh_type.value = ElfSectionType.SHT_STRTAB.value
+        elf.sections.append(str_header)
+        with open('/tmp/minimal', 'wb') as f:
+            f.write(elf.pack())
+
     def test_32bits(self):
         path_elf = os.path.join(os.path.dirname(__file__), 'main')
 
@@ -145,6 +158,7 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)
         self.assertEqual(elf.elf_header.e_ehsize.value, 52)
         self.assertEqual(elf.elf_header.e_shnum.value, 30)
+        self.assertEqual(elf.elf_header.e_shstrndx.value, 29)
         self.assertEqual(elf.sections.n, 30)
         self.assertEqual(len(elf.sections), 30)
         self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB.value)

@@ -32,7 +32,11 @@ BTW there are fields that have dependencies that should be updated also in
 inverse
 
 Probably the best solution is to use a Meta class with dependency
-explicitely set that passes that to the fields of interest
+explicitely set that passes that to the fields of interest: internally the
+container class will create an hidden attribute to which the dependent
+parameters will refer to. This although generate a problem of updating
+such field. In this way we don't have to think about absolute and relative
+dependencies.
 
 For example, the ``ELF`` format has an header that indicates in the
 field named ``e_shoff`` at what offset the section header table is;

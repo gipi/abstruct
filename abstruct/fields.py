@@ -169,6 +169,11 @@ class RealArrayField(RealField):
     def setn(self, n):
         self.n = n
 
+    def append(self, element):
+        # TODO: check element type is correct
+        self.value.append(element)
+        self.n += len(self.value)
+
     def pack(self, stream=None):
         data = b''
 

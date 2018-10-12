@@ -74,8 +74,8 @@ class RealField(object):
 
 class RealStructField(RealField):
     def __init__(self, format, default=0, equals_to=None, **kw):
-        self.format = format
         super().__init__(default=default if not equals_to else equals_to, **kw)
+        self.format = format
 
     def init(self):
         self.value = self.default

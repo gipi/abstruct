@@ -187,7 +187,7 @@ class RealArrayField(RealField):
         self.value = [] # reset the fields already present
         for idx in range(self.n):
             element = self.field_cls()
-            logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
+            logger.debug('%s: unpacking item %d' % (self.__class__.__name__, idx))
             element.unpack(stream)
             self.value.append(element)
 

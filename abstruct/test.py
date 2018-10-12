@@ -77,6 +77,24 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
 
+    def test_dependencies(self):
+        class Dep(Chunk):
+            class Dependencies:
+                relations = [
+                    ('field_src', 'field_dst'),
+                ]
+
+            field_src = fields.StructField('I', default=0x137)
+            field_dst = fields.StructField('I')
+
+        dep = Dep()
+        #dep.field_dst
+
+        #import ipdb;ipdb.set_trace()
+        #self.assertTrue()
+        self.assertTrue(dep.field_dst.value == dep.field_src.value, 'dst=%d and src=%d' % (dep.field_dst.value, dep.field_src.value))
+        self.assertTrue(dep.field_dst == 0x137)
+
 class PaddingFieldTests(unittest.TestCase):
     def test_is_ok(self):
         class Padda(Chunk):

@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-
 class Dependency(object):
     '''This makes the relation between fields possible.
 

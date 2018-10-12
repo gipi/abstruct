@@ -70,6 +70,14 @@ class Chunk(metaclass=MetaChunk):
             logger.debug('field \'%s\' initialized' % name)
             setattr(self, name, field_constructor(self))
 
+        # set dependencies
+        if hasattr(self, 'Dependencies'):
+            for field_a, field_b in self.Dependencies.relations:
+                logger.debug('%s: found relations %s and %s' % (self.__class__.__name__, field_a, field_b))
+                ref_name = self.__class__.resolve_relation_name(field_a, field_b)
+                setattr(self, ref_name, None)
+                getattr(self, field_a).configure_dependencies('value', getattr(self, ref_name))
+                getattr(self, field_b).configure_dependencies('value', getattr(self, ref_name))
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
         if self.stream:
@@ -77,6 +85,10 @@ class Chunk(metaclass=MetaChunk):
         else:
             for name, _  in self.__class__._meta.fields:
                 getattr(self, name).init()
+
+    @classmethod
+    def resolve_relation_name(cls, field_a, field_b):
+        return '_%s_%s_value' % (field_a, field_b)
 
     @classmethod
     def add_dependencies(cls, father, child_name, deps):

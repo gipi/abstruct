@@ -111,6 +111,11 @@ class SectionHeader(Chunk):
         stream.restore()
 
 class ElfFile(Chunk):
+        class Meta:
+            dependencies = [
+                ('elf_header.e_shnum', 'sections.n'),
+                ('elf_header.e_shoff', 'sections.offset'),
+            ]
         elf_header = fields.ElfHeaderField()
-        sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Offset('elf_header.e_shoff'))
+        sections   = fields.ArrayField(SectionHeader)
 

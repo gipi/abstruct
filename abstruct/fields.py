@@ -31,6 +31,7 @@ class Field(object):
 
 class RealField(object):
     def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, formatter=None, **kwargs):
+        self._references = {}
         self.father = father
         self.default = default
         self.offset = offset
@@ -43,12 +44,24 @@ class RealField(object):
         return self.formatter % (self.value)
 
     def __getattribute__(self, name):
-        '''If the field is a Field then return directly the 'value' attribute'''
-        field = super().__getattribute__(name)
-        if isinstance(field, Dependency) and name != 'default': # FIXME: epic workaround
-            return field.resolve(self)
+        if name != '_references' and name in self._references.keys():
+            return self._references[name]
+        return super().__getattribute__(name)
 
-        return field
+    def __setattr__(self, name, value):
+        if name != '_references' and name in self._references:
+            ref = getattr(self._references, name)
+            ref = value
+        else:
+            super().__setattr__(name, value)
+
+    def configure_dependencies(self, name, ref):
+        '''This tells the field that his value has some reference to external entity'''
+        logger.debug('configure_dependency() for %s.%s' % (self.__class__.__name__, name))
+        if name in self._references:
+            raise AttributeError('dependency for %s already set!' % name)
+
+        self._references[name] = ref
 
     def pack(self, stream=None):
         raise NotImplemented('you need to implement this in the subclass')

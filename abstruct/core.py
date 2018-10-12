@@ -5,6 +5,7 @@ from .fields import *
 from .streams import Stream
 
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -20,6 +21,7 @@ class MetaChunk(type):
         new_cls._meta = Meta()
 
         for obj_name, obj in attrs.items():
+            logger.debug('add_to_class called for %s with arguments %s %s' % (cls.__name__, obj_name, obj))
             new_cls.add_to_class(obj_name, obj)
 
         # create a Field to use this Chunk

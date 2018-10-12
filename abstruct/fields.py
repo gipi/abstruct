@@ -4,7 +4,9 @@ import struct
 from .properties import Dependency
 
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 '''

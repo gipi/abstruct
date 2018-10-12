@@ -51,6 +51,18 @@ class MetaChunk(type):
             setattr(cls, name, value)
 
 
+class _Dep(object):
+    '''Simply store a dependency inside it'''
+    def __init__(self, ref_name):
+        self.ref_name = ref_name
+
+    def set(self, value):
+        setattr(self, self.ref_name, value)
+
+    def get(self):
+        return getattr(self, self.ref_name)
+
+
 # TODO: add compliant() to check chunk can decode (think 32 vs 64 bit ELF)
 class Chunk(metaclass=MetaChunk):
     '''
@@ -77,9 +89,10 @@ class Chunk(metaclass=MetaChunk):
             for field_a, field_b in self.Dependencies.relations:
                 logger.debug('%s: found relations %s and %s' % (self.__class__.__name__, field_a, field_b))
                 ref_name = self.__class__.resolve_relation_name(field_a, field_b)
-                setattr(self, ref_name, None)
-                getattr(self, field_a).configure_dependencies('value', getattr(self, ref_name))
-                getattr(self, field_b).configure_dependencies('value', getattr(self, ref_name))
+                dep = _Dep(ref_name)
+                setattr(dep, ref_name, None)
+                getattr(self, field_a).configure_dependencies('value', dep)
+                getattr(self, field_b).configure_dependencies('value', dep)
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
         if self.stream:

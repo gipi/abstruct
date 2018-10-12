@@ -47,20 +47,19 @@ class RealField(object):
 
     def __getattribute__(self, name):
         if name != '_references' and name in self._references.keys():
-            return self._references[name]
+            return self._references[name].get()
         return super().__getattribute__(name)
 
     def __setattr__(self, name, value):
         if name != '_references' and name in self._references:
-            ref = getattr(self._references, name)
-            ref = value
+            self._references[name].set(value)
         else:
             super().__setattr__(name, value)
 
     def configure_dependencies(self, name, ref):
         '''This tells the field that his value has some reference to external entity'''
         logger.debug('configure_dependency() for %s.%s' % (self.__class__.__name__, name))
-        if name in self._references:
+        if name != '_references' and name in self._references:
             raise AttributeError('dependency for %s already set!' % name)
 
         self._references[name] = ref

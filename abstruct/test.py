@@ -131,7 +131,7 @@ class ELFTest(unittest.TestCase):
         elf = ElfFile()
         str_header = SectionHeader()
         str_header.sh_type.value = ElfSectionType.SHT_STRTAB.value
-        elf.sections.append(str_header)
+        elf.sections.value.append(str_header)
         with open('/tmp/minimal', 'wb') as f:
             f.write(elf.pack())
 

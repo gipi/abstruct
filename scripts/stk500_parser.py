@@ -24,4 +24,7 @@ if __name__ == '__main__':
     print('%08x' % conversation.whatever.value)
     print(conversation.packets.value)
 
+    for message in conversation.packets.value:
+        print(message)
+
     import ipdb;ipdb.set_trace()

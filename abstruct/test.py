@@ -12,7 +12,7 @@ from .elf import (
     ElfMachine,
     ElfSectionType, ElfEIClass, ElfEIData,
     SectionHeader)
-from .stk500 import STK500Packet
+from .stk500 import STK500Packet, STK500CmdSignOnResponse
 from .core import Chunk, Meta, Dependency
 from .streams import Stream
 from . import fields
@@ -175,3 +175,12 @@ class STK500Tests(unittest.TestCase):
         self.assertEqual(packet.message_size.value, 5)
         self.assertEqual(packet.message_body.value, b'\x01\x02\x03\x04\x05')
 
+    def test_cmd_sign_on(self):
+        cmd_sign_on_message_response = b'\x01\x00\x08\x41\x56\x52\x49\x53\x50\x5f\x32'
+
+        message = STK500CmdSignOnResponse(cmd_sign_on_message_response)
+
+        self.assertEqual(message.answer_id.value, 0x01)
+        self.assertEqual(message.status.value, 0x00)
+        self.assertEqual(message.signature_length.value, 8)
+        self.assertEqual(message.signature.value, b"AVRISP_2")

@@ -1,12 +1,40 @@
 # Design
 
+This library scope is to parse and to build binary file format starting from an high
+level description represented by a python class, in the same way Django models
+abstract away the database layer and allow to forget about underlying structures.
+
 There are two pretty distinct phases for a format:
 
  - unpacking: transform raw data in attributes
  - packing: transforming attributes in raw data
 
-The problems arise when we modify attributes and want that other attributes
-that depend on those are updated or not by default.
+the terminology is borrowed from the ``struct`` module.
+
+## Chunks
+
+Roughly speaking a file format is composed of several **chunks** of bytes: i.e.
+a countigous stream of bytes identified by two particular attributes **offset**
+and **size**. In real format is possible that a chunk determines also another distinct
+chunk at some offset determined by a field in it (think about the ELF section header).
+
+A problems arises when we have attributes that depend on other attributes, like a
+field that determines the size of the following field in the format description:
+imagine a format like the following
+
+```
+class FormatA(Chunk):
+    class Dependencies:
+        relations = [
+            ('subchunk_size', 'subchunk.size'),
+        ]
+    magic = fields.StringField(default=b'\xca\xfe\xba\xbe')
+    subchunk_size  = fields.StructField('I')
+    subchunk = fields.SubChunkField()
+```
+
+in the unpacking we need to have unpacked the ``subchunk`` chunk before we can determine
+the size to put into the ``subchunk_size`` field.
 
 ## Unpack
 

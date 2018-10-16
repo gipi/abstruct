@@ -120,12 +120,15 @@ class StringNullTerminatedField(Field):
         return self.value
 
 class RealArrayField(RealField):
-    '''Un/Pack an array of Chunks'''
-    def __init__(self, field_cls, n=0, **kw):
+    '''Un/Pack an array of Chunks.
+
+    TODO: add a parameter to choose when the array must stop, like a particular data value.
+    '''
+    def __init__(self, field_cls, n=None, **kw):
         self.field_cls = field_cls
         self.n = n
 
-        if not (isinstance(n, Dependency) or isinstance(n, int)):
+        if n and not (isinstance(n, Dependency) or isinstance(n, int)):
             raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
 
         if 'default' not in kw:
@@ -166,11 +169,16 @@ class RealArrayField(RealField):
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
         self.value = [] # reset the fields already present
-        for idx in range(self.n):
+        real_n = self.n if self.n else 100 # FIXME
+        for idx in range(real_n):
             element = self.field_cls()
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
-            element.unpack(stream)
-            self.value.append(element)
+            try:
+                element.unpack(stream)
+                self.value.append(element)
+            except:
+                self.n = idx
+                break
 
 class ArrayField(Field):
     real = RealArrayField

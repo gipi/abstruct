@@ -12,6 +12,10 @@ from .elf import (
     ElfMachine,
     ElfSectionType, ElfEIClass, ElfEIData,
     SectionHeader)
+from .png import (
+    PNGHeader,
+    PNGFile,
+)
 from .stk500 import STK500Packet, STK500CmdSignOnResponse
 from .core import Chunk, Meta, Dependency
 from .streams import Stream
@@ -184,3 +188,18 @@ class STK500Tests(unittest.TestCase):
         self.assertEqual(message.status.value, 0x00)
         self.assertEqual(message.signature_length.value, 8)
         self.assertEqual(message.signature.value, b"AVRISP_2")
+
+class PNGTests(unittest.TestCase):
+    def test_header(self):
+        png_header = PNGHeader()
+
+        self.assertEqual(png_header.magic.value, b'\x89PNG\x0d\x0a\x1a\x0a')
+
+    def test_png_file(self):
+        path_png = os.path.join(os.path.dirname(__file__), 'red.png')
+
+        png = PNGFile(path_png)
+
+        for idx, chunk in enumerate(png.chunks.value):
+            print(idx, chunk)
+

@@ -95,6 +95,30 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(dep.field_dst.value == dep.field_src.value, 'dst=%d and src=%d' % (dep.field_dst.value, dep.field_src.value))
         self.assertTrue(dep.field_dst == 0x137)
 
+    def test_section(self):
+        '''we want to test a chunk composed of an header describing where a section is
+        with an offset not contiguous to the header.'''
+        class Header(Chunk):
+            section_offset = fields.StructField('I')
+
+        class Section(Chunk):
+            data = fields.StringField(0x10)
+
+        class Format(Chunk):
+            class Dependencies:
+                relations = [
+                    ('header.section_offset', 'section.offset'),
+                ]
+            header  = fields.HeaderField()
+            section = fields.SectionField()
+
+        fmt = Format()
+
+        fmt.header.section_offset.value = 0x100
+        fmt.section.data.value = b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+
+        print(fmt.pack())
+
 class PaddingFieldTests(unittest.TestCase):
     def test_is_ok(self):
         class Padda(Chunk):

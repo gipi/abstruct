@@ -150,16 +150,18 @@ class Chunk(metaclass=MetaChunk):
 
         return size
 
-    def pack(self, stream=None):
+    def pack(self, stream):
         '''
         
         '''
-        value = b'' if not stream else stream
+        import io
+        if self.offset.value:
+            stream.seek(self.offset.value, io.SEEK_SET)
+        else:
+            self.offset.value = stream.tell()
         for field_name, _ in self._meta.fields:
             logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
-            value += getattr(self, field_name).pack(stream=stream)
-
-        return value
+            getattr(self, field_name).pack(stream)
 
     def unpack(self, stream):
         for field_name, _ in self._meta.fields:

@@ -39,6 +39,7 @@ class RealField(object):
         self.offset = offset
         self.little_endian = little_endian
         self.formatter = formatter if formatter else '%s'
+        self.value = None
 
         #self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
 
@@ -85,8 +86,8 @@ class RealStructField(RealField):
     def size(self):
         return struct.calcsize(self.format)
 
-    def pack(self, stream=None):
-        return struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
+    def pack(self, stream):
+        stream.write(struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value))
 
     def unpack(self, stream):
         value = stream.read(self.size())
@@ -115,8 +116,8 @@ class RealStringField(RealField):
     def size(self):
         return len(self.value)
 
-    def pack(self, stream=None):
-        return self.value
+    def pack(self, stream):
+        stream.write(self.value)
 
     def unpack(self, stream):
         self.value = stream.read(self.n)

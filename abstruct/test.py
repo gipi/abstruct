@@ -1,4 +1,5 @@
 import logging
+import io
 import os
 import shutil
 import subprocess
@@ -117,7 +118,10 @@ class CoreTests(unittest.TestCase):
         fmt.header.section_offset.value = 0x100
         fmt.section.data.value = b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
 
-        print(fmt.pack())
+        stream = io.BytesIO()
+        fmt.pack(stream)
+        stream.seek(0)
+        print(stream.read())
 
 class PaddingFieldTests(unittest.TestCase):
     def test_is_ok(self):

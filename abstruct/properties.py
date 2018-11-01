@@ -57,20 +57,3 @@ class Dependency(object):
 
         return value
 
-
-# NOTE: we need the caller to seek() correctly a given offset
-#       if it depends on external fields
-#       It's different with respect to Dependency() since
-#       the expression is with respect to the father (probably
-#       to be fixed)
-class Offset(object):
-    def __init__(self, expression):
-        self.expression = expression
-
-    def resolve(self, obj):
-        # here split 'other_child.field'
-        other_child, field_name = self.expression.split('.')
-        sibiling = getattr(obj, other_child)
-
-        return getattr(sibiling, field_name).value
-

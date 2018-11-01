@@ -1,8 +1,6 @@
 import io
 import logging
 
-from .properties import Offset
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -43,9 +41,7 @@ class Stream(object):
     def seek(self, offset):
         real_offset = None
 
-        if isinstance(offset, Offset):
-            real_offset = offset.resolve()
-        elif isinstance(offset, int):
+        if isinstance(offset, int):
             real_offset = offset
         else:
             raise ValueError('\'%s\' is the wrong kind of offset to use' % offset.__class__.__name__)

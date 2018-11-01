@@ -3,7 +3,6 @@ from enum import Enum
 from ..core import Chunk, Dependency
 from .fields import *
 from .. import fields
-from ..properties import Offset
 
 
 class ElfType(Enum):

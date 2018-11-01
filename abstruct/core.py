@@ -77,12 +77,19 @@ class Chunk(metaclass=MetaChunk):
 
     def __init__(self, filepath=None, father=None, offset=None, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
-        self.offset = offset
+        self.offset = OffsetField()
         self.father = father
 
         for name, field_constructor in self.__class__._meta.fields:
             logger.debug('field \'%s\' initialized' % name)
             setattr(self, name, field_constructor(self))
+
+        def _resolve_field(_obj, _attr_name):
+            _tree = _attr_name.split('.')
+            for _field_name in _tree:
+                _obj = getattr(_obj, _field_name)
+
+            return _obj
 
         # set dependencies
         if hasattr(self, 'Dependencies'):
@@ -91,8 +98,8 @@ class Chunk(metaclass=MetaChunk):
                 ref_name = self.__class__.resolve_relation_name(field_a, field_b)
                 dep = _Dep(ref_name)
                 setattr(dep, ref_name, None)
-                getattr(self, field_a).configure_dependencies('value', dep)
-                getattr(self, field_b).configure_dependencies('value', dep)
+                _resolve_field(self, field_a).configure_dependencies('value', dep)
+                _resolve_field(self, field_b).configure_dependencies('value', dep)
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
         if self.stream:

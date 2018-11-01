@@ -110,8 +110,8 @@ class SectionHeader(Chunk):
         stream.restore()
 
 class ElfFile(Chunk):
-        class Meta:
-            dependencies = [
+        class Dependencies:
+            relations = [
                 ('elf_header.e_shnum', 'sections.n'),
                 ('elf_header.e_shoff', 'sections.offset'),
             ]

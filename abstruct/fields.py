@@ -99,10 +99,10 @@ class StructField(Field):
 
 class RealStringField(RealField):
     def __init__(self, n, padding=0, **kw):
+        super().__init__(**kw)
         self.n = n
         self.padding = padding
 
-        super().__init__(**kw)
 
     def init(self):
         self.default = b'\x00' * self.n if not self.default else self.default
@@ -139,18 +139,9 @@ class StringNullTerminatedField(Field):
 class RealArrayField(RealField):
     '''Un/Pack an array of Chunks'''
     def __init__(self, field_cls, n=0, **kw):
+        super().__init__(**kw)
         self.field_cls = field_cls
         self.n = n
-
-        if not (isinstance(n, Dependency) or isinstance(n, int)):
-            raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
-
-        if 'default' not in kw:
-            kw['default'] = []
-            if isinstance(n, int) and n > 0:
-                kw['default'] = [self.field_cls()]*self.n
-
-        super().__init__(**kw)
 
     def init(self):
         self.value = self.default

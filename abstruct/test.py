@@ -163,7 +163,7 @@ class FieldsTests(unittest.TestCase):
 
         self.assertEqual(dummy.dummy_size.value, 9)
 
-class ELFTest(unittest.TestCase):
+class ELFTests(unittest.TestCase):
     def test_empty(self):
         elf = ElfFile()
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC.value)

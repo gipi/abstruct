@@ -12,8 +12,8 @@ response of command at application level.
 So we should maintain an internal status to tell which side of the communication
 we are packing/unpacking.
 '''
-from .core import *
-from . import fields
+from ..core import *
+from .. import fields
 
 class STK500Packet(Chunk):
     '''Transport layer'''

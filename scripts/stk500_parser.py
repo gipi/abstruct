@@ -2,7 +2,7 @@ import sys
 import logging
 
 
-from abstruct.stk500 import STK500Packet
+from abstruct.communications.stk500 import STK500Packet
 from abstruct.core import *
 from abstruct import fields
 

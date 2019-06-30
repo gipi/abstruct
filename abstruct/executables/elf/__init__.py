@@ -1,9 +1,9 @@
 from enum import Enum
 
-from ..core import Chunk, Dependency
-from .fields import *
-from .. import fields
-from ..properties import Offset
+from ...core import Chunk, Dependency
+from .fields import * # TODO: use elf_fields
+from ... import fields
+from ...properties import Offset
 
 
 class ElfType(Enum):

@@ -1,7 +1,7 @@
 from enum import Enum
 
-from .. import fields
-from ..core import Chunk
+from ... import fields
+from ...core import Chunk
 """
 From ELF: Executable and Linkable Format page 8, Data types
 

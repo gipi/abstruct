@@ -6,17 +6,23 @@ import tempfile
 import unittest
 
 
-from .elf import (
+from .executables.elf import (
     ElfFile,
     ElfType,
     ElfMachine,
     ElfSectionType, ElfEIClass, ElfEIData,
     SectionHeader)
-from .png import (
+
+from .images.png import (
     PNGHeader,
     PNGFile,
 )
-from .stk500 import STK500Packet, STK500CmdSignOnResponse
+
+from .communications.stk500 import (
+    STK500Packet,
+    STK500CmdSignOnResponse,
+)
+
 from .core import Chunk, Meta, Dependency
 from .streams import Stream
 from . import fields

@@ -3,6 +3,8 @@
 
 Format created to replace patent-emcumbered GIF files.
 
+The specification is at <http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html>.
+
 '''
 from abstruct.core import Chunk
 from abstruct import fields
@@ -16,7 +18,7 @@ class PNGHeader(Chunk):
 class PNGChunk(Chunk):
     '''
     This is the main data structure of the format: the 4 fields represent
-    a chunk into the file.
+    a chunk into the file. Each field is intended big-endian.
 
     A chunk is defined as critical or ancillary depending on the case of the
     starting letter of the type field.
@@ -37,6 +39,26 @@ class PNGChunk(Chunk):
 
     def isCritical(self):
         return chr(self.type.value[0]).isupper()
+
+
+class IHDRData(Chunk):
+    width = fields.StructField('I', little_endian=False)
+    height = fields.StructField('I', little_endian=False)
+    depth = fields.StructField('c')
+    color = fields.StructField('c')
+    compression = fields.StructField('c')
+    filter = fields.StructField('c')
+    interlace = fields.StructField('c')
+
+
+class PLTEEntry(Chunk):
+    red   = fields.StructField('c')
+    green = fields.StructField('c')
+    blue  = fields.StructField('c')
+
+
+class PLTEData(Chunk):
+    palettes = fields.ArrayField(PLTEEntry)
 
 
 class PNGFile(Chunk):

@@ -16,6 +16,8 @@ from .executables.elf import (
 from .images.png import (
     PNGHeader,
     PNGFile,
+    IHDRData,
+    PLTEData,
 )
 
 from .communications.stk500 import (
@@ -208,4 +210,22 @@ class PNGTests(unittest.TestCase):
 
         for idx, chunk in enumerate(png.chunks.value):
             print(idx, chunk, chunk.isCritical())
+            chunkType = chunk.type.value
+            if chunkType == b'IHDR':
+                ihdr = IHDRData(chunk.data.value)
+
+                print('size:\t%dx%d' % (ihdr.width.value, ihdr.height.value))
+                print('color type:\t', ihdr.color.value)
+                print('depth:\t', ihdr.depth.value)
+                print('compression:\t', ihdr.compression.value)
+                print('filtering:\t', ihdr.filter.value)
+            elif chunkType == b'IDAT':
+                import zlib
+                chunkDeflateFunc = zlib.decompressobj(15)
+                chunkDeflated = chunkDeflateFunc.decompress(chunk.data.value)
+                print(chunkDeflated)
+            elif chunkType == b'PLTE':
+                palettes = PLTEData(chunk.data.value)
+                for palette in palettes.palettes.value:
+                    print(palette)
 

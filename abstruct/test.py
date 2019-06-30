@@ -207,5 +207,5 @@ class PNGTests(unittest.TestCase):
         png = PNGFile(path_png)
 
         for idx, chunk in enumerate(png.chunks.value):
-            print(idx, chunk)
+            print(idx, chunk, chunk.isCritical())
 

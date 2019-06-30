@@ -17,6 +17,9 @@ The API will be change very heavily in future. It uses python3.
 
  - [ ] add common file formats
    - [ ] PNG
+     - [ ] IHDR
+     - [ ] PLTE
+     - [ ] IDAT
    - [ ] JPEG
    - [ ] ZIP
    - [ ] PDF

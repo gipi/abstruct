@@ -50,7 +50,16 @@ class RealField(object):
 
         return field
 
+    def _update_value(self):
+        '''This is used to update the binary value before packing'''
+        pass
+
     def pack(self, stream=None):
+        '''The pack-ing action needs to take into consideration the fact that we need
+        to eventually update fields that depends on other fields
+
+        This operation is not idempotent!
+        '''
         raise NotImplemented('you need to implement this in the subclass')
 
     def unpack(self, stream=None):
@@ -69,6 +78,7 @@ class RealStructField(RealField):
         return struct.calcsize(self.format)
 
     def pack(self, stream=None):
+        self._update_value()
         return struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
 
     def unpack(self, stream):

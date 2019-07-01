@@ -25,6 +25,10 @@ from .communications.stk500 import (
     STK500CmdSignOnResponse,
 )
 
+from .common.crc import (
+    CRCField,
+)
+
 from .core import Chunk, Meta, Dependency
 from .streams import Stream
 from . import fields
@@ -141,6 +145,27 @@ class FieldsTests(unittest.TestCase):
         dummy.garbage.value = b'ABCD'
         self.assertEqual(dummy.dummy_size.value, 13)
 
+    def test_crc32(self):
+        class DummyChunk(Chunk):
+            dataA = fields.StructField('I')
+            dataB = fields.StructField('I')
+            dataC = fields.StructField('I')
+
+            crc   = CRCField([
+                    'dataA',
+                    'dataC',
+                ], formatter='0x%08x')
+
+        dummy = DummyChunk()
+        dummy.dataA.value = 0x01020304
+        dummy.dataB.value = 0x05060708
+        dummy.dataC.value = 0x090A0B0C
+
+        dummy.crc.pack()
+
+        print(dummy.crc)
+
+
 class ELFTest(unittest.TestCase):
     def test_empty(self):
         elf = ElfFile()
@@ -217,7 +242,7 @@ class PNGTests(unittest.TestCase):
         png = PNGFile(path_png)
 
         for idx, chunk in enumerate(png.chunks.value):
-            print(idx, chunk, chunk.isCritical())
+            print(idx, chunk, chunk.isCritical(), chunk.crc.calculate())
             chunkType = chunk.type.value
             if chunkType == b'IHDR':
                 ihdr = IHDRData(chunk.data.value)

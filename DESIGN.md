@@ -55,7 +55,9 @@ raw data; it would be necessary a method to check/fix discordant values
 
 ## Pack
 
-If we pack
+If we pack we should can choose between maintaining the sanity of the format
+updating with respect to the constraints of the format or pack as the fields
+are in the actual instance.
 
 ## Default
 

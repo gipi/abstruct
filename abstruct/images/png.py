@@ -7,8 +7,11 @@ The specification is at <http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.htm
 
 '''
 from abstruct.core import Chunk
-from abstruct import fields
+from abstruct import (
+    fields,
+)
 from abstruct.properties import Dependency
+from abstruct.common import crc
 
 
 class PNGHeader(Chunk):
@@ -35,7 +38,7 @@ class PNGChunk(Chunk):
     length = fields.StructField('I', little_endian=False) # big endian
     type   = fields.StringField(4)
     data   = fields.StringField(Dependency('length'))
-    crc    = fields.StructField('I', formatter='%08x') # network byte order
+    crc    = crc.CRCField(['type', 'data'], little_endian=False) # network byte order
 
     def isCritical(self):
         return chr(self.type.value[0]).isupper()

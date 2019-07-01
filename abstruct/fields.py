@@ -183,7 +183,7 @@ class RealArrayField(RealField):
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
         self.value = [] # reset the fields already present
-        real_n = self.n if self.n else 100 # FIXME
+        real_n = self.n if self.n is not None else 100 # FIXME
         for idx in range(real_n):
             element = self.field_cls()
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))

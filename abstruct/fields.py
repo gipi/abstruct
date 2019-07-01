@@ -80,6 +80,9 @@ class StructField(Field):
     real = RealStructField
 
 
+'''
+TODO: understand if it is needed to separate from Binary and alphanumeric strings.
+'''
 class RealStringField(RealField):
     def __init__(self, n, padding=0, **kw):
         self.n = n

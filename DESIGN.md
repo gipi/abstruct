@@ -1,8 +1,8 @@
 # Design
 
-This library scope is to parse and to build binary file format starting from an high
+This library scope is to parse and to build binary file formats starting from an high
 level description represented by a python class, in the same way Django models
-abstract away the database layer and allow to forget about underlying structures.
+abstracts away the database layer and allows to forget about underlying structures.
 
 There are two pretty distinct phases for a format:
 
@@ -11,11 +11,15 @@ There are two pretty distinct phases for a format:
 
 the terminology is borrowed from the ``struct`` module.
 
-## Chunks
+## Chunks and fields
 
 Roughly speaking a file format is composed of several **chunks** of bytes: i.e.
 a countigous stream of bytes identified by two particular attributes **offset**
-and **size**. In real format is possible that a chunk determines also another distinct
+and **size**. When a chunk is directly representable as a byte-like value
+is it a field.
+
+
+In real format is possible that a chunk determines also another distinct
 chunk at some offset determined by a field in it (think about the ELF section header).
 
 A problems arises when we have attributes that depend on other attributes, like a
@@ -35,6 +39,13 @@ class FormatA(Chunk):
 
 in the unpacking we need to have unpacked the ``subchunk`` chunk before we can determine
 the size to put into the ``subchunk_size`` field.
+
+**N.B.:** here we can see that the dependency is one-way since it's a little tricky
+to decide what to do if we change the size
+
+Moreover from a single field can depend more than one field (for example the field
+``EI_DATA`` in the ``ELF`` header determines the endianess of the file format for the
+given ``ELF`` file).
 
 ## Unpack
 
@@ -72,6 +83,10 @@ Another question is, if this is possible, I mean, in the ``ELF`` specification
 I don't see any indication of a minimal distance between parts, so probably I can put
 this where I want.
 
+Obviously if we want to use the library as a tool to create files without
+enforcing dependencies (think of fuzzing for example) we need an attribute assigned
+to the chunk that set recursively in all its children off the dependencies.
+
 ## Offset
 
 ## Examples
@@ -83,3 +98,14 @@ this where I want.
 
 here we have a chunk of fixed size with a padding that depends on it by an algebraic
 relation with the size of the remanaing fields.
+
+## API
+
+Each ``Chunk`` has the following
+
+ - pack()
+ - unpack()
+
+instead ``Field`` subclasses have the attribute
+
+ - ``value`` that gives

@@ -89,6 +89,10 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
 
+    def test_enum(self):
+        self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
+        self.assertEqual(ElfEIClass.ELFCLASS64.name, 'ELFCLASS64')
+
 class PaddingFieldTests(unittest.TestCase):
     def test_is_ok(self):
         class Padda(Chunk):
@@ -127,11 +131,15 @@ class FieldsTests(unittest.TestCase):
     def test_dependency(self):
         class DummyChunk(Chunk):
             magic = fields.StringField(n=5, default=b"HELLO")
+            garbage = fields.StringField(0x10)
             dummy_size = fields.StructField('<I', equals_to=Dependency('size'))
 
         dummy = DummyChunk()
 
-        self.assertEqual(dummy.dummy_size.value, 9)
+        self.assertEqual(dummy.dummy_size.value, 25)
+
+        dummy.garbage.value = b'ABCD'
+        self.assertEqual(dummy.dummy_size.value, 13)
 
 class ELFTest(unittest.TestCase):
     def test_empty(self):

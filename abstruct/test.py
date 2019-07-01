@@ -93,6 +93,20 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
 
+    def test_offset(self):
+        '''Test that the offset is handled correctly'''
+        class Dummy(Chunk):
+            field1 = fields.StringField(0x2)
+            field2 = fields.StringField(0x3)
+
+        dummy = Dummy(b'\x01\x02\x0a\x0b')
+
+        self.assertEqual(dummy.field1.value, b'\x01\x02')
+        self.assertEqual(dummy.field2.value, b'\x0a\x0b')
+        # we expect the offset to be present
+        self.assertEqual(dummy.field1.offset, 0)
+        self.assertEqual(dummy.field2.offset, 2)
+
     def test_enum(self):
         self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
         self.assertEqual(ElfEIClass.ELFCLASS64.name, 'ELFCLASS64')

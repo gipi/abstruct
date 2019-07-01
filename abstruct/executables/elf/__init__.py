@@ -77,6 +77,10 @@ class ElfHeader(Chunk):
     e_shnum     = fields.StructField('H')
     e_shstrndx  = fields.StructField('H')
 
+# TODO: is this the representation of the section headers or also of the
+#       section associated? in the latter we need to calculate the offset
+#       of the sections taking into account that also the headers of the
+#       segments must precede them!
 class SectionHeader(Chunk):
     sh_name      = fields.StructField('i')
     sh_type      = fields.StructField('i')

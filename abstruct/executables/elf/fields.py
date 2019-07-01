@@ -1,3 +1,9 @@
+'''
+# Elf format
+
+Executable and Linkage Format is a file format vastly used in the *nix world.
+
+'''
 from enum import Enum
 
 from ... import fields
@@ -28,9 +34,9 @@ class ElfIdent(Chunk):
     EI_MAG1 = fields.StructField('c', default=b'E')
     EI_MAG2    = fields.StructField('c', default=b'L')
     EI_MAG3    = fields.StructField('c', default=b'F')
-    EI_CLASS   = fields.StructField('B', default=ElfEIClass.ELFCLASS32.value)
-    EI_DATA    = fields.StructField('B', default=ElfEIData.ELFDATA2LSB.value)
-    EI_VERSION = fields.StructField('B', default=1)
+    EI_CLASS   = fields.StructField('B', default=ElfEIClass.ELFCLASS32.value) # determines the architecture
+    EI_DATA    = fields.StructField('B', default=ElfEIData.ELFDATA2LSB.value) # determines the endianess of the binary data
+    EI_VERSION = fields.StructField('B', default=1) # always 1
     EI_PAD     = fields.StringField(9)
 
 

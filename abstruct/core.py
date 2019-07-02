@@ -51,6 +51,21 @@ class MetaChunk(type):
 # TODO: add compliant() to check chunk can decode (think 32 vs 64 bit ELF)
 class Chunk(metaclass=MetaChunk):
     '''
+    With Field is the main class that defines a format: its main attributes
+    are offset and size that identify univocally a Chunk.
+
+    A Chunk can contain sub-chunks.
+
+    Two main operations are defined on a Chunk:
+
+     1. unpack(): the more straightforward, i.e., reading the binary data
+        and build a high-level representation of that.
+        Usually when unpacking you use as offset the actual offset of the
+        stream and the chunk itself knows how many bytes needs to read
+        to finalize the representation
+
+     2. pack(): encode the high-level representation into binary data.
+
     All the subclasses of this generate a XField to be used as Field()
     for any Chunk the needs it.
 
@@ -103,14 +118,34 @@ class Chunk(metaclass=MetaChunk):
 
     def pack(self, stream=None):
         '''
-        
+        This method is a little tricky since we are creating a raw
+        data encoding of the class instance.
+
+        Should the method return the data or the stream?
+
+        **we need to update size and offset during the packing phase**
         '''
-        value = b'' if not stream else stream
+        # if we are the root father then we can set our offset to zero
+        # and initialize the stream
+        if self.isRoot:
+            self.offset = 0
+
+        stream = Stream(b'') if not stream else stream
         for field_name, _ in self._meta.fields:
             logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
-            value += getattr(self, field_name).pack(stream=stream)
 
-        return value
+            field_instance = getattr(self, field_name)
+
+            if field_instance.offset:
+                stream.seek(field_instance.offset)
+
+            field_instance.offset = stream.tell()
+            field_instance.pack(stream=stream)
+
+            # TODO: here we need to set offset of the field since we
+            #       are the parent and only us can now where to place it
+
+        return stream.obj.getvalue()
 
     def unpack(self, stream):
         for field_name, _ in self._meta.fields:

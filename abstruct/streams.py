@@ -65,6 +65,9 @@ class Stream(object):
 
         return b''.join(data)
 
+    def write(self, data):
+        return self.obj.write(data)
+
     # TODO: create contextmanager
     def save(self):
         self.history.append(self.obj.tell())

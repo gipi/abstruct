@@ -2,6 +2,7 @@ import logging
 import struct
 
 from .properties import Dependency
+from .streams import Stream
 
 
 logger = logging.getLogger(__name__)
@@ -16,10 +17,9 @@ the XFIeld() associated to the chunk to be constructor for the XChunk().
 
 class Field(object):
     real = None
-    def __init__(self, *args, offset=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        self.offset = offset
 
     def contribute_to_chunk(self, cls, name):
         cls._meta.fields.append((name, self))
@@ -79,7 +79,13 @@ class RealStructField(RealField):
 
     def pack(self, stream=None):
         self._update_value()
-        return struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
+        packed_value = struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
+
+        stream = stream if stream else Stream(b'')
+
+        stream.write(packed_value)
+
+        return stream.getvalue()
 
     def unpack(self, stream):
         value = stream.read(self.size())
@@ -112,7 +118,11 @@ class RealStringField(RealField):
         return len(self.value)
 
     def pack(self, stream=None):
-        return self.value
+        stream = Stream(b'') if not stream else stream
+
+        stream.write(self.value)
+
+        return stream.obj.getvalue()
 
     def unpack(self, stream):
         self.value = stream.read(self.n)

@@ -166,7 +166,7 @@ class CoreTests(unittest.TestCase):
             '''this format has 16 bytes located at the offset
             indicated in the first field'''
             off = fields.StructField('I')
-            data = fields.StringField(0x10)
+            data = fields.StringField(0x10, offset=Dependency('off'))
 
         dummy = Dummy()
 
@@ -179,7 +179,7 @@ class CoreTests(unittest.TestCase):
         # i'm expecting to see the AAAAs starting at offset 10
         self.assertEqual(
             packed_contents,
-            b'\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+            b'\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
         )
 
 

@@ -148,16 +148,36 @@ class Chunk(metaclass=MetaChunk):
         return stream.obj.getvalue()
 
     def unpack(self, stream):
+        '''This is one of the main APIs to take care of: its aim is to take a binary
+        data and transform in the representation given by the class this method
+        is implemented.
+
+        Passing a stream is mandatory since is possible that the different
+        sub-chunks can have offsets not contiguous so we need to jump back and
+        forth.
+
+        As already told size and offset are the two fundamental parameters that
+        define a chunk inside a binary stream: 
+
+        There are some aspects that have to take in consideration:
+
+            1. you can have size and offset dependencies
+            2. you can enforce dependencies or not
+        '''
         for field_name, _ in self._meta.fields:
             logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
 
             # setup the offset for this chunk
+            offset = field.offset
             if offset:
                 stream.seek(offset)
+            else:
+                offset = stream.tell()
 
             logger.debug('offset at %d' % stream.tell())
 
             field.unpack(stream)
+            field.offset = offset
 
 

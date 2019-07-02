@@ -93,7 +93,7 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
 
-    def test_offset(self):
+    def test_offset_basic(self):
         '''Test that the offset is handled correctly'''
         class Dummy(Chunk):
             field1 = fields.StringField(0x2)
@@ -107,9 +107,81 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(dummy.field1.offset, 0)
         self.assertEqual(dummy.field2.offset, 2)
 
+    def test_offset_dependencies(self):
+        class TLV(Chunk):
+            type   = fields.StructField('I')
+            length = fields.StructField('I')
+            data   = fields.StringField(Dependency('length'))
+            extra  = fields.StructField('I')
+
+        tlv = TLV((
+            b'\x01\x00\x00\x00'
+            b'\x0f\x00\x00\x00'
+            b'\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+            b'\x0a\x0b\x0c\x0d'
+        ))
+
+        self.assertEqual(tlv.type.value, 0x01)
+        self.assertEqual(tlv.type.offset, 0x00)
+        self.assertEqual(tlv.length.value, 0x0f)
+        self.assertEqual(tlv.length.offset, 0x04)
+        self.assertEqual(tlv.data.value, b'\x41'*0x0f)
+        self.assertEqual(tlv.data.offset, 0x04 + 0x04)
+        self.assertEqual(tlv.extra.value, 0x0d0c0b0a)
+        self.assertEqual(tlv.extra.offset, 0x04 + 0x04 + 0x0f)
+
+        # now try to change the data field's size and verify that
+        # the offset for extra is recalculated and the size field
+        # also is updated accordingly
+        tlv.data.value = '\x42\x42\x42'
+        self.assertEqual(tlv.type.value, 0x01)
+        self.assertEqual(tlv.type.offset, 0x00)
+        self.assertEqual(tlv.length.value, 0x03)
+        self.assertEqual(tlv.length.offset, 0x04)
+        self.assertEqual(tlv.data.value, b'\x42'*0x03)
+        self.assertEqual(tlv.data.offset, 0x04 + 0x04)
+        self.assertEqual(tlv.extra.value, 0x0d0c0b0a)
+        self.assertEqual(tlv.extra.offset, 0x04 + 0x04 + 0x03)
+
+
     def test_enum(self):
         self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
         self.assertEqual(ElfEIClass.ELFCLASS64.name, 'ELFCLASS64')
+
+    def test_packing(self):
+        class Dummy(Chunk):
+            fieldA = fields.StructField('I')
+            fieldB = fields.StructField('I')
+
+        contents = b'\x01\x02\x03\x04\x0a\x0b\x0c\x0d'
+
+        dummy = Dummy(contents)
+
+        repacked_contents = dummy.pack()
+
+        self.assertEqual(repacked_contents, contents)
+
+    def test_packing_w_offset(self):
+        class Dummy(Chunk):
+            '''this format has 16 bytes located at the offset
+            indicated in the first field'''
+            off = fields.StructField('I')
+            data = fields.StringField(0x10)
+
+        dummy = Dummy()
+
+        # try to insert some values an then packing
+        dummy.off.value = 0x0a
+        dummy.data.value = b'\x41'*0x10
+
+        packed_contents = dummy.pack()
+
+        # i'm expecting to see the AAAAs starting at offset 10
+        self.assertEqual(
+            packed_contents,
+            b'\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+        )
+
 
 class PaddingFieldTests(unittest.TestCase):
     def test_is_ok(self):
@@ -221,6 +293,7 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.sections.n, 30)
         self.assertEqual(len(elf.sections), 30)
         self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB.value)
+        self.assertEqual(elf.sections.value[29].offset, 7212)
         self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB.value)
 
 class STK500Tests(unittest.TestCase):

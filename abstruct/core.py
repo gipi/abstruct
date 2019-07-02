@@ -39,7 +39,6 @@ class MetaChunk(type):
     # TODO: factorize with Field()
     def contribute_to_chunk(self, cls, name):
         cls._meta.fields.append((name, self))
-        cls.set_offset(name, self.offset)
 
     def add_to_class(cls, name, value):
         if hasattr(value, 'contribute_to_chunk'):
@@ -58,8 +57,6 @@ class Chunk(metaclass=MetaChunk):
     NOTE: you need to import fields and then call fields.XField() otherwise
     the fields won't be found.
     '''
-    _offsets = {}
-
 
     def __init__(self, filepath=None, father=None, offset=None, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
@@ -86,24 +83,12 @@ class Chunk(metaclass=MetaChunk):
             # dependencies are indexed by the src field name
             cls._dependencies[child_name] = dep
 
-    @classmethod
-    def set_offset(cls, field_name, offset):
-        cls._offsets[field_name] = offset
-
     def __str__(self):
         msg = ''
         for field_name, _ in self._meta.fields:
             field = getattr(self, field_name)
             msg += '%s: %s\n' % (field_name, field)
         return msg
-
-    def resolve_offset_for_field(self, name):
-        offset = self._offsets[name]
-
-        if not offset:
-            return offset
-
-        return offset.resolve(self)
 
     def init(self):
         pass
@@ -133,7 +118,6 @@ class Chunk(metaclass=MetaChunk):
             field = getattr(self, field_name)
 
             # setup the offset for this chunk
-            offset = self.resolve_offset_for_field(field_name)
             if offset:
                 stream.seek(offset)
 

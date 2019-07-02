@@ -23,7 +23,6 @@ class Field(object):
 
     def contribute_to_chunk(self, cls, name):
         cls._meta.fields.append((name, self))
-        cls.set_offset(name, self.offset)
 
     def __call__(self, father):
         if not self.real:

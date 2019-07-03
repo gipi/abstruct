@@ -21,6 +21,12 @@ class Dependency(object):
     '''This makes the relation between fields possible.
 
     We want that accessing this field the resolution is automagical.
+
+    The relation is defined in one direction (usually for unpacking) and
+    must be reversed during the packing phase!
+
+    Probably right now is overcomplicated, we want to understand if make sense
+    to use __getattribute__ and __setattr__ to resolve automagically.
     '''
     def __init__(self, expression, obj=None):
         self.expression = expression
@@ -29,10 +35,7 @@ class Dependency(object):
     def __call__(self, obj):
         return Dependency(self.expression, obj=obj)
 
-
-    def resolve(self, instance):
-        '''With this method we resolve the attribute with respect to the instance
-        passed as argument.'''
+    def resolve_field(self, instance):
         logger.debug('trying to resolve \'%s\'' % self.expression)
         field = prev_field = None
         # here split the expression into the components
@@ -45,6 +48,13 @@ class Dependency(object):
                 field = getattr(field, component_name)
         else:
             raise AttributeError('Dependency with relative expression not yet implemented!')
+
+        return field
+
+    def resolve(self, instance):
+        '''With this method we resolve the attribute with respect to the instance
+        passed as argument.'''
+        field = self.resolve_field(instance)
 
         import inspect
 

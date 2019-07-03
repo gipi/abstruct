@@ -126,6 +126,16 @@ class Chunk(metaclass=MetaChunk):
 
         return size
 
+    def relayout(self):
+        '''This method triggers the chunk and its children to reset
+        the offsets'''
+        self.offset = None
+        for field_name, _ in self._meta.fields:
+            logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
+
+            field_instance = getattr(self, field_name)
+            field_instance.relayout()
+
     def pack(self, stream=None):
         '''
         This method is a little tricky since we are creating a raw

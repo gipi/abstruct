@@ -31,6 +31,7 @@ class Field(object):
 
 class RealField(object):
     def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, formatter=None, **kwargs):
+        self._resolve = True # TODO: create contextmanager
         self.father = father
         self.default = default
         self.offset = offset
@@ -45,10 +46,59 @@ class RealField(object):
     def __getattribute__(self, name):
         '''If the field is a Field then return directly the 'value' attribute'''
         field = super().__getattribute__(name)
-        if isinstance(field, Dependency) and name != 'default': # FIXME: epic workaround
+        if isinstance(field, Dependency) and name != 'default' and self._resolve: # FIXME: epic workaround
+            logger.debug('trying to resolve dependency for \'%s\'' % name)
             return field.resolve(self)
 
         return field
+
+    def __setattr__(self, name, value):
+        '''This is not the opposite of __getattribute__
+
+        For more info read the official doc <https://docs.python.org/2/reference/datamodel.html#object.__setattr__>
+        '''
+        try:
+            # the try block is needed in order to catch initialization of variables
+            # for the first time
+            self.__dict__['_resolve'] = False
+            field = super().__getattribute__(name)
+            self.__dict__['_resolve'] = True
+            if isinstance(field, Dependency) and name != 'default': # FIXME: epic workaround
+                logger.debug('set for field \'%s\' the value \'%d\'depends on' % (name, value))
+                real_field = field.resolve_field(self)
+                real_field.value = value
+                return
+        except AttributeError:
+            pass
+        finally:
+            self.__dict__['_resolve'] = True # FIXME
+
+        super().__setattr__(name, value)
+
+    def __set_offset(self, value):
+        self.__offset = value
+
+    def __get_offset(self):
+        return self.__offset
+
+    offset = property(__get_offset, __set_offset)
+
+    def _set_value(self, value):
+        self.__value = value
+
+    def _get_value(self):
+        return self.__value
+
+    value = property(
+        fget=lambda self: self._get_value(),
+        fset=lambda self, value: self._set_value(value))
+
+    def relayout(self):
+        self._resolve = False # we don't want the automagical resolution
+        if not isinstance(self.offset, Dependency):
+            self.offset = None
+
+        self._resolve = True
 
     def _update_value(self):
         '''This is used to update the binary value before packing'''
@@ -113,6 +163,10 @@ class RealStringField(RealField):
             raise ValueError('the default is longer than the "n" parameter')
 
         self.value = self.default + b'\x00'*padding
+
+    def _set_value(self, value):
+        super()._set_value(value)
+        self.n = len(self.value)
 
     def size(self):
         return len(self.value)

@@ -133,7 +133,9 @@ class CoreTests(unittest.TestCase):
         # now try to change the data field's size and verify that
         # the offset for extra is recalculated and the size field
         # also is updated accordingly
-        tlv.data.value = '\x42\x42\x42'
+        tlv.data.value = b'\x42\x42\x42'
+        tlv.relayout() # we must trigger relayouting
+        tlv.pack()
         self.assertEqual(tlv.type.value, 0x01)
         self.assertEqual(tlv.type.offset, 0x00)
         self.assertEqual(tlv.length.value, 0x03)

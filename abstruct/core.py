@@ -3,6 +3,7 @@ import struct
 
 from .fields import *
 from .streams import Stream
+from .properties import get_root_from_chunk
 
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,15 @@ class Chunk(metaclass=MetaChunk):
 
     def init(self):
         pass
+
+    @property
+    def root(self):
+        '''Obtain the final father of this chunk'''
+        return get_root_from_chunk(self)
+
+    @property
+    def isRoot(self):
+        return self.root == self
 
     def size(self):
         size = 0

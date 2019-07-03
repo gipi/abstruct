@@ -5,6 +5,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def get_root_from_chunk(instance):
+    is_root = instance.father is None
+    father = instance
+
+    while not is_root:
+        father = instance.father
+
+        is_root = father.father is None
+        instance = father
+
+    return father
 
 class Dependency(object):
     '''This makes the relation between fields possible.
@@ -18,16 +29,6 @@ class Dependency(object):
     def __call__(self, obj):
         return Dependency(self.expression, obj=obj)
 
-    def _get_root(self, instance):
-        is_root = False
-
-        while not is_root:
-            father = instance.father
-
-            is_root = father.father is None
-            instance = father
-
-        return father
 
     def resolve(self, instance):
         '''With this method we resolve the attribute with respect to the instance
@@ -39,7 +40,7 @@ class Dependency(object):
         fields_path = self.expression.split('.') # FIXME: create class FieldPath to encapsulate
 
         if fields_path[0] != '':
-            field = self._get_root(instance)
+            field = get_root_from_chunk(instance)
             for component_name in fields_path:
                 field = getattr(field, component_name)
         else:

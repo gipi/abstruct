@@ -50,6 +50,7 @@ class Stream(object):
         else:
             raise ValueError('\'%s\' is the wrong kind of offset to use' % offset.__class__.__name__)
 
+        logger.debug('stream seek() at %08x' % real_offset)
         self.obj.seek(real_offset)
 
     def read_all(self):

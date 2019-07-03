@@ -157,9 +157,11 @@ class Chunk(metaclass=MetaChunk):
             field_instance = getattr(self, field_name)
 
             if field_instance.offset:
+                logger.debug('field %s has an offset predefined' % (field_name,))
                 stream.seek(field_instance.offset)
 
             field_instance.offset = stream.tell()
+            logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
             field_instance.pack(stream=stream)
 
             # TODO: here we need to set offset of the field since we

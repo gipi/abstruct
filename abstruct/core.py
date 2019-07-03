@@ -118,6 +118,13 @@ class Chunk(metaclass=MetaChunk):
     def isRoot(self):
         return self.root == self
 
+    @property
+    def phase(self):
+        '''describe the status of the chunk, mainly used internally to understand
+        if is ongoing packing/unpacking or whatever
+        '''
+        return self._phase
+
     def size(self):
         size = 0
         for field_name, _ in self._meta.fields:

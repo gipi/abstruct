@@ -1,3 +1,6 @@
+'''
+http://www.sco.com/developers/devspecs/gabi41.pdf
+'''
 from enum import Enum
 
 from ...core import Chunk, Dependency
@@ -114,7 +117,20 @@ class SectionHeader(Chunk):
         # and and restore the saved offset
         stream.restore()
 
+
+class ProgramHeader(Chunk):
+    p_type   = fields.StructField('I')
+    p_offset = fields.StructField('I')
+    p_vaddr  = fields.StructField('I')
+    p_paddr  = fields.StructField('I')
+    p_filesz = fields.StructField('I')
+    p_memsz  = fields.StructField('I')
+    p_flags  = fields.StructField('I')
+    p_align  = fields.StructField('I')
+
+
 class ElfFile(Chunk):
     elf_header = fields.ElfHeaderField()
     sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Dependency('elf_header.e_shoff'))
+    programs   = fields.ArrayField(ProgramHeader, n=Dependency('elf_header.e_phnum'), offset=Dependency('elf_header.e_phoff'))
 

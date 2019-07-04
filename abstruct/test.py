@@ -10,8 +10,9 @@ from .executables.elf import (
     ElfFile,
     ElfType,
     ElfMachine,
-    ElfSectionType, ElfEIClass, ElfEIData,
-    SectionHeader)
+    ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType,
+    SectionHeader,
+)
 
 from .images.png import (
     PNGHeader,
@@ -289,6 +290,8 @@ class ELFTest(unittest.TestCase):
 
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN.value) # WHY IS COMPILED AS DYN? ALIENS!
         self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)
+
+        # sections
         self.assertEqual(elf.elf_header.e_ehsize.value, 52)
         self.assertEqual(elf.elf_header.e_shnum.value, 30)
         self.assertEqual(elf.elf_header.e_shstrndx.value, 29)
@@ -297,6 +300,22 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB.value)
         self.assertEqual(elf.sections.value[29].offset, 7212)
         self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB.value)
+        # programs
+        self.assertEqual(elf.elf_header.e_phentsize.value, 32)
+        self.assertEqual(elf.elf_header.e_phnum.value, 9)
+        self.assertEqual(len(elf.programs), 9)
+        self.assertEqual( # we remove the last three elements since have not well defined type
+            [_.p_type.value for _ in elf.programs.value[:-3]],
+            [_.value for _ in [
+                ElfSegmentType.PT_PHDR,
+                ElfSegmentType.PT_INTERP,
+                ElfSegmentType.PT_LOAD,
+                ElfSegmentType.PT_LOAD,
+                ElfSegmentType.PT_DYNAMIC,
+                ElfSegmentType.PT_NOTE,
+            ]],
+        )
+
 
 class STK500Tests(unittest.TestCase):
     def test_single(self):

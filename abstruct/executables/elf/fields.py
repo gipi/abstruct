@@ -40,6 +40,18 @@ class ElfIdent(Chunk):
     EI_PAD     = fields.StringField(9)
 
 
+class ElfSegmentType(Enum):
+    PT_NULL = 0
+    PT_LOAD = 1
+    PT_DYNAMIC = 2
+    PT_INTERP  = 3
+    PT_NOTE    = 4
+    PT_SHLIB   = 5
+    PT_PHDR    = 6
+    PT_LOPROC  = 0x70000000
+    PT_HIPROC  = 0x7fffffff
+
+
 class RealElf32_Addr(fields.StructField):
     def __init__(self, **kwargs):
         super().__init__('<I')

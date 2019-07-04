@@ -26,8 +26,10 @@ The API will be change very heavily in future. It uses python3.
    - [ ] ELF
      - [ ] use endianess indicated in  ``header.e_ident.EI_DATA`` for all the fields
      - [x] read ``ELF`` header
-     - [ ] read ``ELF`` sections
-     - [ ] read ``ELF`` segments
+     - [x] read ``ELF`` sections header
+     - [ ] read ``ELF`` sections data
+     - [x] read ``ELF`` segments header
+     - [ ] read ``ELF`` segments data
  - [ ] Add uncommon formats
    - [ ] QR-Code (this is the encoding of binary data using images, the opposite of a format like ``PNG``)
  - [ ] core functionalities

@@ -24,7 +24,8 @@ The API will be change very heavily in future. It uses python3.
    - [ ] ZIP
    - [ ] PDF
    - [ ] ELF
-     - [ ] use endianess indicated in  ``header.e_ident.EI_DATA`` for all the fields
+     - [ ] use endianess indicated in ``header.e_ident.EI_DATA`` for all the fields
+     - [ ] use word size indicated by ``header.e_ident.EI_CLASS`` for the fields involved
      - [x] read ``ELF`` header
      - [x] read ``ELF`` sections header
      - [ ] read ``ELF`` sections data

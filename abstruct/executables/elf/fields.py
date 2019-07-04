@@ -52,6 +52,46 @@ class ElfSegmentType(Enum):
     PT_HIPROC  = 0x7fffffff
 
 
-class RealElf32_Addr(fields.StructField):
+# TODO: create BoolFromDependency that use the EI_CLASS from the ELF header
+#       and generates the endianess to pass via the little_endian parameter.
+class RealELF_Addr(fields.StructField):
+    '''Wrapper for the fundamental datatype of the ELF format'''
     def __init__(self, **kwargs):
-        super().__init__('<I')
+        super().__init__('I')
+
+
+class RealELFSectionsField(fields.RealField):
+    '''Handles the data pointed by an entry of the Section header
+    TODO: how do entry from this and the corresponding header behave wrt each other?
+          if we remove the header, we remove the entry and vice versa?
+    '''
+    def __init__(self, header, *args, **kwargs):
+        '''Use the header parameter to get the entries needed'''
+        super().__init__(*args, **kwargs)
+        self.header = header # this MUST be a Dependency
+
+    def init(self):
+        pass
+
+    def size(self):
+        size = 0
+        for field in self.header:
+            size += field.size()
+
+        return size
+
+    def pack(self, stream=None):
+        '''TODO: we have to update also the corresponding header entries'''
+        for field in self.header:
+            logger.debug('pack()()()')
+
+    def unpack(self, stream):
+        self.value = [] # reset the entries
+        for field in self.header:
+            section_type = field.sh_type.value
+            logger.debug('found section type %d' % section_type)
+
+
+class ELFSectionsField(fields.Field):
+    real = RealELFSectionsField
+

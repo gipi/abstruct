@@ -238,9 +238,10 @@ class RealArrayField(RealField):
         data = b''
 
         for field in self.value:
-            data += field.pack()
+            field.pack(stream=stream)
+            field.offset = stream.tell()
 
-        return data
+        return data # FIXME
 
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,
@@ -251,7 +252,10 @@ class RealArrayField(RealField):
             element = self.field_cls()
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
             try:
+                element_offset = stream.tell()
                 element.unpack(stream)
+                element.offset = element_offset
+
                 self.value.append(element)
             except:
                 self.n = idx

@@ -1,15 +1,17 @@
 # Abstruct
 
+The ``struct`` module on steroid.
+
 ![travis build status](https://travis-ci.org/gipi/abstruct.svg?branch=master)
 
 **This is a work in progress!!**
 
 I want to create a module able to ``pack()/unpack()`` generic file format
-described by using standard python classes syntax (this is very high inspired
-by the way Django model works).
+described by using standard python classes syntax (the inspiration come from
+the way Django models work).
 
-This because a need a module ables to not only read but also modify and write
-``ELF`` files and seems that there are not module for this.
+This because I need a module ables to not only to read but also to modify and to write
+``ELF`` files and it seems that there are not module for this.
 
 The API will be change very heavily in future. It uses python3.
 
@@ -69,3 +71,4 @@ class Elf32Header(Chunk):
 header = Elf32Header('/bin/ls') # NOTE: it must be a 32bit ELF
 print(header.e_entry.value) # will print the value associated with the field
 ```
+

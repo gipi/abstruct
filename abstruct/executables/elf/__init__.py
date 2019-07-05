@@ -113,3 +113,5 @@ class ElfFile(Chunk):
     sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Dependency('elf_header.e_shoff'))
     programs   = fields.ArrayField(ProgramHeader, n=Dependency('elf_header.e_phnum'), offset=Dependency('elf_header.e_phoff'))
     sections_data = ELFSectionsField(Dependency('sections'))
+    segments_data = ELFSegmentsField(Dependency('programs'))
+

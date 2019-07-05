@@ -5,6 +5,7 @@ Executable and Linkage Format is a file format vastly used in the *nix world.
 
 '''
 from enum import Enum
+import logging
 
 from ... import fields
 from ...core import Chunk
@@ -13,6 +14,9 @@ From ELF: Executable and Linkable Format page 8, Data types
 
 
 """
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # FIXME: the endianess depens on EI_DATA
@@ -60,6 +64,16 @@ class RealELF_Addr(fields.StructField):
         super().__init__('I')
 
 
+class ELFInterpol(Chunk): # TODO: use StringField
+    def __init__(self, *args, size=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._size = size
+
+    def unpack(self, stream):
+        self.value = stream.read(self._size)
+
+
 class RealELFSectionsField(fields.RealField):
     '''Handles the data pointed by an entry of the Section header
     TODO: how do entry from this and the corresponding header behave wrt each other?
@@ -90,8 +104,53 @@ class RealELFSectionsField(fields.RealField):
         for field in self.header:
             section_type = field.sh_type.value
             logger.debug('found section type %d' % section_type)
+            logger.debug('offset: %d size: %d' % (field.sh_offset.value, field.sh_size.value))
+
+
+class RealELFSegmentsField(fields.RealField):
+    '''Handles the data pointed by an entry of the program header
+    TODO: how do entry from this and the corresponding header behave wrt each other?
+          if we remove the header, we remove the entry and vice versa?
+    '''
+    def __init__(self, header, *args, **kwargs):
+        '''Use the header parameter to get the entries needed'''
+        super().__init__(*args, **kwargs)
+        self.header = header # this MUST be a Dependency
+
+    def init(self):
+        pass
+
+    def size(self):
+        size = 0
+        for field in self.header:
+            size += field.size()
+
+        return size
+
+    def pack(self, stream=None):
+        '''TODO: we have to update also the corresponding header entries'''
+        for field in self.header:
+            logger.debug('pack()()()')
+
+    def unpack(self, stream):
+        self.value = [] # reset the entries
+        for field in self.header:
+            segment_type = field.p_type.value
+            logger.debug('found section type %d' % segment_type)
+            logger.debug('offset: %d size: %d' % (field.p_offset.value, field.p_filesz.value))
+
+            if segment_type == ElfSegmentType.PT_INTERP.value:
+                interp = ELFInterpol(offset=field.p_offset.value, size=field.p_filesz.value)
+
+                real_offset = field.p_offset
+                interp.unpack(stream)
+                # we don't need to set the field's offset
+                print('>>>', interp.value)
 
 
 class ELFSectionsField(fields.Field):
     real = RealELFSectionsField
+
+class ELFSegmentsField(fields.Field):
+    real = RealELFSegmentsField
 

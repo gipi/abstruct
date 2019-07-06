@@ -316,6 +316,9 @@ class ELFTest(unittest.TestCase):
             ]],
         )
 
+        # check if the string table is dumped correctly
+        print(elf.sections.value[elf.elf_header.e_shstrndx.value].pack())
+
 
 class STK500Tests(unittest.TestCase):
     def test_single(self):

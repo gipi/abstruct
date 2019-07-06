@@ -94,7 +94,7 @@ class RealELFSectionsField(fields.RealField):
 
         return size
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
         for field in self.header:
             logger.debug('pack()()()')
@@ -127,7 +127,7 @@ class RealELFSegmentsField(fields.RealField):
 
         return size
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
         for field in self.header:
             logger.debug('pack()()()')

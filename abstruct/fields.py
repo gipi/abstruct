@@ -104,7 +104,7 @@ class RealField(object):
         '''This is used to update the binary value before packing'''
         pass
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         '''The pack-ing action needs to take into consideration the fact that we need
         to eventually update fields that depends on other fields
 
@@ -127,7 +127,7 @@ class RealStructField(RealField):
     def size(self):
         return struct.calcsize(self.format)
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         self._update_value()
         packed_value = struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
 
@@ -171,7 +171,7 @@ class RealStringField(RealField):
     def size(self):
         return len(self.value)
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         stream = Stream(b'') if not stream else stream
 
         stream.write(self.value)
@@ -193,7 +193,7 @@ class StringNullTerminatedField(Field):
     def init(self, default):
         self.value = default
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         return self.value
 
 class RealArrayField(RealField):
@@ -234,11 +234,18 @@ class RealArrayField(RealField):
     def setn(self, n):
         self.n = n
 
-    def pack(self, stream=None):
+    def relayout(self):
+        super().relayout()
+        for field in self.value:
+            field.relayout()
+
+    def pack(self, stream=None, relayout=True):
         data = b''
+        if relayout:
+            self.relayout()
 
         for field in self.value:
-            field.pack(stream=stream)
+            field.pack(stream=stream, relayout=False)
             field.offset = stream.tell()
 
         return data # FIXME

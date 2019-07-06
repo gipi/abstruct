@@ -134,8 +134,8 @@ class Chunk(metaclass=MetaChunk):
         return size
 
     def relayout(self):
-        '''This method triggers the chunk and its children to reset
-        the offsets'''
+        '''This method triggers the chunk and its children to reset the offsets
+        and the phase in order to pack correctly'''
         self.offset = None
         for field_name, _ in self._meta.fields:
             logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
@@ -143,7 +143,7 @@ class Chunk(metaclass=MetaChunk):
             field_instance = getattr(self, field_name)
             field_instance.relayout()
 
-    def pack(self, stream=None):
+    def pack(self, stream=None, relayout=True):
         '''
         This method is a little tricky since we are creating a raw
         data encoding of the class instance.
@@ -154,8 +154,8 @@ class Chunk(metaclass=MetaChunk):
         '''
         # if we are the root father then we can set our offset to zero
         # and initialize the stream
-        if self.isRoot:
-            self.offset = 0
+        if relayout:
+            self.relayout()
 
         stream = Stream(b'') if not stream else stream
         for field_name, _ in self._meta.fields:
@@ -167,12 +167,13 @@ class Chunk(metaclass=MetaChunk):
                 logger.debug('field %s has an offset predefined' % (field_name,))
                 stream.seek(field_instance.offset)
 
+            # here we need to set offset of the field since we
+            # are the parent and only us can now where to place it
             field_instance.offset = stream.tell()
             logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
-            field_instance.pack(stream=stream)
+            # we call pack() on the subchunks
+            field_instance.pack(stream=stream, relayout=False) # we hope someone triggered the relayout before
 
-            # TODO: here we need to set offset of the field since we
-            #       are the parent and only us can now where to place it
 
         return stream.obj.getvalue()
 

@@ -3,7 +3,9 @@ import struct
 
 from .fields import *
 from .streams import Stream
-from .properties import get_root_from_chunk
+from .properties import (
+    get_root_from_chunk, ChunkPhase,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -78,6 +80,7 @@ class Chunk(metaclass=MetaChunk):
         self.stream = Stream(filepath) if filepath else filepath
         self.offset = offset
         self.father = father
+        self._phase = ChunkPhase.INIT
 
         for name, field_constructor in self.__class__._meta.fields:
             logger.debug('field \'%s\' initialized' % name)
@@ -121,9 +124,16 @@ class Chunk(metaclass=MetaChunk):
     @property
     def phase(self):
         '''describe the status of the chunk, mainly used internally to understand
-        if is ongoing packing/unpacking or whatever
+        if is ongoing packing/unpacking or whatever.
+
+        If its children are not ongoing any process then is DONE.
         '''
-        return self._phase
+        fields = [getattr(self, field_name) for field_name, _ in self._meta.fields]
+        for field in fields:
+            if field.phase == ChunkPhase.PROGRESS:
+                return ChunkPhase.PROGRESS
+
+        return ChunkPhase.DONE
 
     def size(self):
         size = 0
@@ -142,6 +152,7 @@ class Chunk(metaclass=MetaChunk):
 
             field_instance = getattr(self, field_name)
             field_instance.relayout()
+
 
     def pack(self, stream=None, relayout=True):
         '''

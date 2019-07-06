@@ -1,7 +1,7 @@
 import logging
 import struct
 
-from .properties import Dependency
+from .properties import Dependency, ChunkPhase
 from .streams import Stream
 
 
@@ -32,6 +32,7 @@ class Field(object):
 class RealField(object):
     def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, formatter=None, **kwargs):
         self._resolve = True # TODO: create contextmanager
+        self._phase = ChunkPhase.INIT
         self.father = father
         self.default = default
         self.offset = offset
@@ -75,6 +76,10 @@ class RealField(object):
 
         super().__setattr__(name, value)
 
+    @property
+    def phase(self):
+        return self._phase
+
     def __set_offset(self, value):
         self.__offset = value
 
@@ -97,6 +102,7 @@ class RealField(object):
         self._resolve = False # we don't want the automagical resolution
         if not isinstance(self.offset, Dependency):
             self.offset = None
+            self._phase = ChunkPhase.PROGRESS
 
         self._resolve = True
 

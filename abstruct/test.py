@@ -30,7 +30,7 @@ from .common.crc import (
     CRCField,
 )
 
-from .core import Chunk, Meta, Dependency
+from .core import Chunk, Meta, Dependency, ChunkPhase
 from .streams import Stream
 from . import fields
 
@@ -90,9 +90,11 @@ class CoreTests(unittest.TestCase):
 
         d = DummyContainer()
 
-
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
+        self.assertEqual(d.phase, ChunkPhase.DONE)
+        self.assertEqual(d.dummy.phase, ChunkPhase.DONE)
+        self.assertEqual(d.dummy.field.phase, ChunkPhase.INIT)
 
     def test_offset_basic(self):
         '''Test that the offset is handled correctly'''
@@ -174,12 +176,33 @@ class CoreTests(unittest.TestCase):
         dummy = Dummy()
 
         # try to insert some values an then packing
-        dummy.off.value = 0x0a
         dummy.data.value = b'\x41'*0x10
-
         packed_contents = dummy.pack()
 
+        # i'm expecting to see the AAAAs starting at offset 4
+        self.assertEqual(dummy.off.value, 0x04)
+        self.assertEqual(
+            packed_contents,
+            b'\x0a\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+        )
+        # try to insert some values an then packing
+        dummy.off.value = 0x0a
+
+        #dummy.data.offset = 0x0a
+        packed_contents = dummy.pack()
+
+        # i'm expecting to see the AAAAs starting at offset 4
+        self.assertEqual(dummy.off.value, 0x04)
+        self.assertEqual(
+            packed_contents,
+            b'\x0a\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+        )
+
+        # now we don't want a compliant file
+        packed_contents = dummy.pack()
+        dummy.off.value = 0x0a
         # i'm expecting to see the AAAAs starting at offset 10
+        self.assertEqual(dummy.off.value, 0x0a)
         self.assertEqual(
             packed_contents,
             b'\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'

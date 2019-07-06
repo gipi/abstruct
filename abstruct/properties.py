@@ -1,8 +1,17 @@
 import logging
+from enum import Enum
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+class ChunkPhase(Enum):
+    '''Enum to state the actual phase of a chunk'''
+    INIT      = 0
+    PROGRESS  = 1
+    PACKING   = 2
+    DONE      = 3
 
 
 def get_root_from_chunk(instance):

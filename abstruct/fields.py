@@ -89,10 +89,14 @@ class RealField(object):
     offset = property(__get_offset, __set_offset)
 
     def _set_value(self, value):
-        self.__value = value
+        self._value = value
 
     def _get_value(self):
-        return self.__value
+        if not self._value:
+            self.init()
+            self._value = self.default
+
+        return self._value
 
     value = property(
         fget=lambda self: self._get_value(),
@@ -123,7 +127,7 @@ class RealField(object):
 
 
 class RealStructField(RealField):
-    def __init__(self, format, default=0, equals_to=None, **kw):
+    def __init__(self, format, default=0, equals_to=None, **kw): # decide between default and equals_to
         self.format = format
         super().__init__(default=default if not equals_to else equals_to, **kw)
 
@@ -177,7 +181,7 @@ class RealStringField(RealField):
         self.n = len(self.value)
 
     def size(self):
-        return len(self.value)
+        return self.n
 
     def pack(self, stream=None, relayout=True):
         stream = Stream(b'') if not stream else stream

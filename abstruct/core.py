@@ -169,22 +169,29 @@ class Chunk(metaclass=MetaChunk):
             self.relayout()
 
         stream = Stream(b'') if not stream else stream
-        for field_name, _ in self._meta.fields:
-            logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
-            field_instance = getattr(self, field_name)
+        count = 0
+        while self.phase != ChunkPhase.DONE:
+            logger.debug('trying packing #%d' % count)
+            for field_name, _ in self._meta.fields:
+                logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
-            if field_instance.offset:
-                logger.debug('field %s has an offset predefined' % (field_name,))
-                stream.seek(field_instance.offset)
+                field_instance = getattr(self, field_name)
 
-            # here we need to set offset of the field since we
-            # are the parent and only us can now where to place it
-            field_instance.offset = stream.tell()
-            logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
-            # we call pack() on the subchunks
-            field_instance.pack(stream=stream, relayout=False) # we hope someone triggered the relayout before
+                if field_instance.offset:
+                    logger.debug('field %s has an offset predefined' % (field_name,))
+                    stream.seek(field_instance.offset)
 
+                # here we need to set offset of the field since we
+                # are the parent and only us can now where to place it
+                field_instance.offset = stream.tell()
+                logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
+                # we call pack() on the subchunks
+                field_instance.pack(stream=stream, relayout=False) # we hope someone triggered the relayout before
+
+            count += 1
+            if count > 5:
+                raise ValueError('relayouting failed for instance of class %s' % self.__class__.__name__)
 
         return stream.obj.getvalue()
 

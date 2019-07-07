@@ -141,6 +141,8 @@ class RealStructField(RealField):
 
         stream.write(packed_value)
 
+        self._phase = ChunkPhase.DONE
+
         return stream.getvalue()
 
     def unpack(self, stream):
@@ -181,6 +183,8 @@ class RealStringField(RealField):
         stream = Stream(b'') if not stream else stream
 
         stream.write(self.value)
+
+        self._phase = ChunkPhase.DONE
 
         return stream.obj.getvalue()
 
@@ -245,14 +249,28 @@ class RealArrayField(RealField):
         for field in self.value:
             field.relayout()
 
+    @property
+    def phase(self):
+        for field in self.value:
+            if field.phase == ChunkPhase.PROGRESS:
+                return ChunkPhase.PROGRESS
+
+        return ChunkPhase.DONE
+
     def pack(self, stream=None, relayout=True):
         data = b''
         if relayout:
             self.relayout()
 
-        for field in self.value:
-            field.pack(stream=stream, relayout=False)
-            field.offset = stream.tell()
+        count = 0
+        while self.phase != ChunkPhase.DONE:
+            for field in self.value:
+                field.pack(stream=stream, relayout=False)
+                field.offset = stream.tell()
+
+            count += 1
+            if count > 5:
+                raise ValueError('relayouting error for class %s' % self.__class__.__name__)
 
         return data # FIXME
 

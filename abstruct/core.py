@@ -92,7 +92,7 @@ class Chunk(metaclass=MetaChunk):
             self.unpack(self.stream)
         else:
             for name, _  in self.__class__._meta.fields:
-                getattr(self, name).init()
+                getattr(self, name).init() # FIXME: understand init() logic :P
 
     @classmethod
     def add_dependencies(cls, father, child_name, deps):
@@ -136,6 +136,7 @@ class Chunk(metaclass=MetaChunk):
         return ChunkPhase.DONE
 
     def size(self):
+        '''the size parameter MUST not be set but MUST be derived from the subchunks'''
         size = 0
         for field_name, _ in self._meta.fields:
             field = getattr(self, field_name)

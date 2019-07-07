@@ -315,6 +315,9 @@ class RealSelectField(RealField):
 
 
 class SelectField(Field):
+    '''
+    This field can be used like an array
+    '''
     real = RealSelectField
 
 class RealPaddingField(RealField):

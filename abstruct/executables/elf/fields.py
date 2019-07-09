@@ -205,6 +205,14 @@ class RealELFSectionsField(fields.RealField):
 
                 self.value.append(section)
                 print(section)
+            else:
+                logger.debug('unpacking unhandled data')
+                stream.seek(field.sh_offset.value)
+                section = fields.RealStringField(field.sh_size.value)
+                section.unpack(stream)
+
+                self.value.append(section)
+
 
 class RealELFSegmentsField(fields.RealField):
     '''Handles the data pointed by an entry of the program header
@@ -245,7 +253,13 @@ class RealELFSegmentsField(fields.RealField):
                 interp.unpack(stream)
                 # we don't need to set the field's offset
                 print('>>>', interp.value)
+            else:
+                logger.debug('unpacking unhandled data')
+                stream.seek(field.p_offset.value)
+                section = fields.RealStringField(field.p_filesz.value)
+                section.unpack(stream)
 
+                self.value.append(section)
 
 class ELFSectionsField(fields.Field):
     real = RealELFSectionsField

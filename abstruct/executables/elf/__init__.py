@@ -61,3 +61,16 @@ class ElfFile(Chunk):
     sections_data = ELFSectionsField(Dependency('sections'))
     segments_data = ELFSegmentsField(Dependency('programs'))
 
+    @property
+    def section_names_table(self):
+        '''return the string SectionStringTable with the names of the sections'''
+        return self.sections_data.value[self.elf_header.e_shstrndx.value]
+
+    def get_section_by_name(self, name):
+        string_table = self.section_names_table
+        sections_names = [string_table.get(_.sh_name.value) for _ in self.sections.value]
+
+        index = sections_names.index(name)
+
+        return self.sections_data.value[index]
+

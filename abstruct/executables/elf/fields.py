@@ -138,6 +138,20 @@ class SectionStringTable(fields.Field):
     real = RealSectionStringTable
 
 
+class SymbolTableEntry(Chunk):
+    st_name  = Elf_Word()
+    st_value = Elf_Addr()
+    st_size  = Elf_Word()
+    st_info  = fields.StringField(0x01)
+    st_other = fields.StringField(0x01)
+    st_shndx = Elf_Half()
+
+
+class SymbolTable(fields.RealArrayField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(SymbolTableEntry, *args, **kwargs)
+
+
 class RealELFSectionsField(fields.RealField):
     '''Handles the data pointed by an entry of the Section header
     TODO: how do entry from this and the corresponding header behave wrt each other?
@@ -178,6 +192,19 @@ class RealELFSectionsField(fields.RealField):
                 section.unpack(stream)
                 self.value.append(section)
                 print(section.value)
+            elif section_type == ElfSectionType.SHT_SYMTAB.value:
+                table_size = field.sh_size.value
+                logger.debug('unpacking symbol table')
+                n = int(table_size/SymbolTableEntry().size()) # FIXME: create Dependency w algebraic operation
+                logger.debug(' with %d entries' % n)
+
+                stream.seek(field.sh_offset.value)
+
+                section = SymbolTable(n=n)
+                section.unpack(stream)
+
+                self.value.append(section)
+                print(section)
 
 class RealELFSegmentsField(fields.RealField):
     '''Handles the data pointed by an entry of the program header

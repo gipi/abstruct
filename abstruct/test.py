@@ -389,6 +389,7 @@ class ELFTest(unittest.TestCase):
             '.strtab',
             '.shstrtab',
         ])
+        self.assertEqual(len(elf.symbol_names), 33)
 
         # check if the string table is dumped correctly
         print(elf.sections.value[elf.elf_header.e_shstrndx.value].pack())

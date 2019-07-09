@@ -67,6 +67,10 @@ class ElfFile(Chunk):
         return self.sections_data.value[self.elf_header.e_shstrndx.value]
 
     @property
+    def symbol_names_table(self):
+        return self.get_section_by_name('.strtab')
+
+    @property
     def section_names(self):
         string_table = self.section_names_table
         sections_names = [string_table.get(_.sh_name.value) for _ in self.sections.value]
@@ -78,4 +82,8 @@ class ElfFile(Chunk):
         index = sections_names.index(name)
 
         return self.sections_data.value[index]
+
+    @property
+    def symbol_names(self):
+        return self.symbol_names_table.value
 

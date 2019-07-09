@@ -36,10 +36,34 @@ class ElfIdent(Chunk):
 
 # TODO: create BoolFromDependency that use the EI_CLASS from the ELF header
 #       and generates the endianess to pass via the little_endian parameter.
-class RealELF_Addr(fields.StructField):
+class RealElf_Addr(fields.RealStructField):
     '''Wrapper for the fundamental datatype of the ELF format'''
     def __init__(self, **kwargs):
-        super().__init__('I')
+        super().__init__('I', **kwargs)
+
+
+class RealElf_Sword(fields.RealStructField):
+    '''Wrapper for the fundamental datatype of the ELF format'''
+    def __init__(self, **kwargs):
+        super().__init__('I', **kwargs)
+
+
+class RealElf_Word(fields.RealStructField):
+    '''Wrapper for the fundamental datatype of the ELF format'''
+    def __init__(self, **kwargs):
+        super().__init__('I', **kwargs)
+
+
+class RealElf_Half(fields.RealStructField):
+    '''Wrapper for the fundamental datatype of the ELF format'''
+    def __init__(self, **kwargs):
+        super().__init__('H', **kwargs)
+
+
+class RealElf_Off(fields.RealStructField):
+    '''Wrapper for the fundamental datatype of the ELF format'''
+    def __init__(self, **kwargs):
+        super().__init__('I', **kwargs)
 
 
 class ELFInterpol(Chunk): # TODO: use StringField
@@ -50,6 +74,22 @@ class ELFInterpol(Chunk): # TODO: use StringField
 
     def unpack(self, stream):
         self.value = stream.read(self._size)
+
+class Elf_Sword(fields.Field):
+    real = RealElf_Sword
+
+
+class Elf_Word(fields.Field):
+    real = RealElf_Word
+
+
+class Elf_Half(fields.Field):
+    real = RealElf_Half
+
+
+class Elf_Addr(fields.Field):
+    real = RealElf_Addr
+
 
 
 class RealELFSectionsField(fields.RealField):

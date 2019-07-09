@@ -102,6 +102,13 @@ class Chunk(metaclass=MetaChunk):
             # dependencies are indexed by the src field name
             cls._dependencies[child_name] = dep
 
+    def __repr__(self):
+        msg = []
+        for field_name, _ in self._meta.fields:
+            field = getattr(self, field_name)
+            msg.append('%s=%s' % (field_name, field))
+        return '<%s(%s)>' % (self.__class__.__name__, ','.join(msg))
+
     def __str__(self):
         msg = ''
         for field_name, _ in self._meta.fields:

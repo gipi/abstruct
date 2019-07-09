@@ -36,10 +36,15 @@ class RealField(object):
         self.father = father
         self.default = default
         self.offset = offset
+        self._value = None
         self.little_endian = little_endian
         self.formatter = formatter if formatter else '%s'
 
         #self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
+
+    def init(self):
+        # here we probably need to initialize the default
+        pass
 
     def __str__(self):
         return self.formatter % (self.value)
@@ -47,7 +52,7 @@ class RealField(object):
     def __getattribute__(self, name):
         '''If the field is a Field then return directly the 'value' attribute'''
         field = super().__getattribute__(name)
-        if isinstance(field, Dependency) and name != 'default' and self._resolve: # FIXME: epic workaround
+        if isinstance(field, Dependency) and self._resolve:
             logger.debug('trying to resolve dependency for \'%s\'' % name)
             return field.resolve(self)
 
@@ -58,13 +63,13 @@ class RealField(object):
 
         For more info read the official doc <https://docs.python.org/2/reference/datamodel.html#object.__setattr__>
         '''
+        self.__dict__['_resolve'] = False
         try:
             # the try block is needed in order to catch initialization of variables
             # for the first time
-            self.__dict__['_resolve'] = False
             field = super().__getattribute__(name)
             self.__dict__['_resolve'] = True
-            if isinstance(field, Dependency) and name != 'default': # FIXME: epic workaround
+            if isinstance(field, Dependency):
                 logger.debug('set for field \'%s\' the value \'%d\'depends on' % (name, value))
                 real_field = field.resolve_field(self)
                 real_field.value = value
@@ -92,8 +97,11 @@ class RealField(object):
         self._value = value
 
     def _get_value(self):
-        if not self._value:
+        if self._value is None:
+            old_resolve = self.__dict__['_resolve']
+            self.__dict__['_resolve'] = True
             self.init()
+            self.__dict__['_resolve'] = old_resolve
             self._value = self.default
 
         return self._value
@@ -130,9 +138,6 @@ class RealStructField(RealField):
     def __init__(self, format, default=0, equals_to=None, **kw): # decide between default and equals_to
         self.format = format
         super().__init__(default=default if not equals_to else equals_to, **kw)
-
-    def init(self):
-        self.value = self.default
 
     def size(self):
         return struct.calcsize(self.format)
@@ -173,8 +178,6 @@ class RealStringField(RealField):
         padding = self.n - len(self.default)
         if padding < 0:
             raise ValueError('the default is longer than the "n" parameter')
-
-        self.value = self.default + b'\x00'*padding
 
     def _set_value(self, value):
         super()._set_value(value)
@@ -228,9 +231,6 @@ class RealArrayField(RealField):
                 kw['default'] = [self.field_cls()]*self.n
 
         super().__init__(**kw)
-
-    def init(self):
-        self.value = self.default
 
     def __len__(self):
         return len(self.value)

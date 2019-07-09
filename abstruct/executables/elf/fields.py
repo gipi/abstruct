@@ -105,17 +105,23 @@ class RealSectionStringTable(fields.RealField):
         self._size = size
         # IMPORTANT: size is used for unpacking, default for packing!!!
 
+    def get(self, index):
+        '''return the string pointed at index'''
+        st = self._contents[index:]
+
+        return st[:st.find(b'\x00')].decode()
+
     def unpack(self, stream):
         '''read all the bytes and then build as many NULL terminated strings
         as possible'''
-        contents = stream.read(self._size)
+        self._contents = stream.read(self._size)
         last_index = 0
 
         strings = []
 
         for index in range(self._size):
-            if contents[index] == 0:
-                strings.append(contents[last_index + 1:index].decode())
+            if self._contents[index] == 0:
+                strings.append(self._contents[last_index + 1:index].decode())
                 last_index = index
 
         self.value = strings

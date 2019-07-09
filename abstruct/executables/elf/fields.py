@@ -91,6 +91,46 @@ class Elf_Addr(fields.Field):
     real = RealElf_Addr
 
 
+# TODO: maybe better subclass of Chunk with ArrayField as unique element?
+class RealSectionStringTable(fields.RealField):
+    '''
+    There are three string tables identified by their section name
+
+        1. ".shstrtab" for section names (this is actually indicated by the e_shstrndx header field)
+        2. ".strtab" names associated with the symbol table entries
+        3. ".dynstr" names associated with dynamic linking
+    '''
+    def __init__(self, size=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._size = size
+        # IMPORTANT: size is used for unpacking, default for packing!!!
+
+    def unpack(self, stream):
+        '''read all the bytes and then build as many NULL terminated strings
+        as possible'''
+        contents = stream.read(self._size)
+        last_index = 0
+
+        strings = []
+
+        for index in range(self._size):
+            if contents[index] == 0:
+                strings.append(contents[last_index + 1:index].decode())
+                last_index = index
+
+        self.value = strings
+
+    def pack(self, stream=None):
+        value = b''
+        for string in self.value:
+            value += string.encode() + b'\x00'
+
+        stream.write(value)
+
+
+class SectionStringTable(fields.Field):
+    real = RealSectionStringTable
+
 
 class RealELFSectionsField(fields.RealField):
     '''Handles the data pointed by an entry of the Section header
@@ -124,6 +164,14 @@ class RealELFSectionsField(fields.RealField):
             logger.debug('found section type %d' % section_type)
             logger.debug('offset: %d size: %d' % (field.sh_offset.value, field.sh_size.value))
 
+            if section_type == ElfSectionType.SHT_STRTAB.value:
+                logger.debug('unpacking string table')
+                # we need to unpack at most sh_size bytes
+                stream.seek(field.sh_offset.value)
+                section = RealSectionStringTable(size=field.sh_size.value)
+                section.unpack(stream)
+                self.value.append(section)
+                print(section.value)
 
 class RealELFSegmentsField(fields.RealField):
     '''Handles the data pointed by an entry of the program header

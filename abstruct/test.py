@@ -12,6 +12,7 @@ from .executables.elf import (
     ElfMachine,
     ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType,
     SectionHeader,
+    RealSectionStringTable,
 )
 
 from .images.png import (
@@ -279,6 +280,24 @@ class FieldsTests(unittest.TestCase):
 
 
 class ELFTest(unittest.TestCase):
+    def test_string_table(self):
+        table = b'\x00ABCD\x00EFGH\x00'
+        string_table = RealSectionStringTable(size=len(table))
+
+        string_table.unpack(Stream(table))
+        self.assertEqual(len(string_table.value), 3)
+        self.assertEqual(string_table.value, [
+            '',
+            'ABCD',
+            'EFGH',
+        ])
+
+        string_table = RealSectionStringTable(default=['', 'miao', 'bau'])
+        s = Stream(b'')
+        string_table.pack(s)
+
+        self.assertEqual(s.getvalue(), b'\x00miao\x00bau\x00')
+
     def test_empty(self):
         elf = ElfFile()
         self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC.value)

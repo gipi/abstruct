@@ -357,6 +357,38 @@ class ELFTest(unittest.TestCase):
                 ElfSegmentType.PT_NOTE,
             ]],
         )
+        self.assertEqual(elf.section_names, [
+            '',
+            '.interp',
+            '.note.ABI-tag',
+            '.note.gnu.build-id',
+            '.gnu.hash',
+            '.dynsym',
+            '.dynstr',
+            '.gnu.version',
+            '.gnu.version_r',
+            '.rel.dyn',
+            '.rel.plt',
+            '.init',
+            '.plt',
+            '.plt.got',
+            '.text',
+            '.fini',
+            '.rodata',
+            '.eh_frame_hdr',
+            '.eh_frame',
+            '.init_array',
+            '.fini_array',
+            '.dynamic',
+            '.got',
+            '.got.plt',
+            '.data',
+            '.bss',
+            '.comment',
+            '.symtab',
+            '.strtab',
+            '.shstrtab',
+        ])
 
         # check if the string table is dumped correctly
         print(elf.sections.value[elf.elf_header.e_shstrndx.value].pack())

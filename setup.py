@@ -13,6 +13,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/gipi/abstruct",
     packages=setuptools.find_packages(),
+    install_requires=[
+        'capstone',
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GPLv2 License",

@@ -392,6 +392,9 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.section_names[14], '.text')
         self.assertEqual(len(elf.symbol_names), 33)
         self.assertEqual(elf.symbols['main'].st_shndx.value, 14)
+        from .executables.elf.code import disasm, CS_MODE_32, CS_ARCH_X86
+        dot_text_starting_offset = elf.sections.value[14].sh_addr.value
+        print('\n'.join(["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str) for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
         self.assertEqual(type(elf.get_section_by_name('.strtab')), '')
 
         # check if the string table is dumped correctly

@@ -87,3 +87,11 @@ class ElfFile(Chunk):
     def symbol_names(self):
         return self.symbol_names_table.value
 
+    @property
+    def symbols(self):
+        symbols_table = self.get_section_by_name('.symtab')
+
+        symbols_table_names = self.symbol_names_table
+
+        return {symbols_table_names.get(_.st_name.value): _ for _ in symbols_table.value}
+

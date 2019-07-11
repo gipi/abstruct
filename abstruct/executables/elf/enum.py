@@ -79,3 +79,8 @@ class ElfSectionType(Enum):
     SHT_LOUSER   = 0x80000000
     SHT_HIUSER   = 0xffffffff
 
+class ElfSectionAttributeFlag(Enum):
+    SHF_WRITE     = 0x01
+    SHF_ALLOC     = 0x02
+    SHF_EXECINSTR = 0x04
+

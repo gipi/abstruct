@@ -12,7 +12,7 @@ from .executables.elf import (
     ElfMachine,
     ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType,
     SectionHeader,
-    RealSectionStringTable,
+    elf_fields,
 )
 
 from .images.png import (

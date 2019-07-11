@@ -4,7 +4,7 @@ http://www.sco.com/developers/devspecs/gabi41.pdf
 from enum import Enum
 
 from ...core import Chunk, Dependency
-from .fields import * # TODO: use elf_fields
+from . import fields as elf_fields
 from .enum import *
 from ... import fields
 from ...properties import Offset
@@ -58,8 +58,8 @@ class ElfFile(Chunk):
     elf_header = fields.ElfHeaderField()
     sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Dependency('elf_header.e_shoff'))
     programs   = fields.ArrayField(ProgramHeader, n=Dependency('elf_header.e_phnum'), offset=Dependency('elf_header.e_phoff'))
-    sections_data = ELFSectionsField(Dependency('sections'))
-    segments_data = ELFSegmentsField(Dependency('programs'))
+    sections_data = elf_fields.ELFSectionsField(Dependency('sections'))
+    segments_data = elf_fields.ELFSegmentsField(Dependency('programs'))
 
     @property
     def section_names_table(self):

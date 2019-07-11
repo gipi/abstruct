@@ -91,6 +91,7 @@ class Elf_Addr(fields.Field):
     real = RealElf_Addr
 
 
+from .reloc import RelocationTable
 # TODO: maybe better subclass of Chunk with ArrayField as unique element?
 class RealSectionStringTable(fields.RealField):
     '''
@@ -201,6 +202,21 @@ class RealELFSectionsField(fields.RealField):
                 stream.seek(field.sh_offset.value)
 
                 section = SymbolTable(n=n)
+                section.unpack(stream)
+
+                self.value.append(section)
+                print(section)
+            elif section_type == ElfSectionType.SHT_REL.value:
+                from .reloc import ElfRelEntry
+                table_size = field.sh_size.value
+
+                logger.debug('unpacking relocation table')
+                n = int(table_size/ElfRelEntry().size()) # FIXME: create Dependency w algebraic operation
+                logger.debug(' with %d entries' % n)
+
+                stream.seek(field.sh_offset.value)
+
+                section = RelocationTable(n=n)
                 section.unpack(stream)
 
                 self.value.append(section)

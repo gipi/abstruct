@@ -10,11 +10,7 @@ import logging
 from ... import fields
 from ...core import Chunk
 from .enum import *
-"""
-From ELF: Executable and Linkable Format page 8, Data types
 
-
-"""
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

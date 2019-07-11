@@ -1,5 +1,12 @@
 '''
-http://www.sco.com/developers/devspecs/gabi41.pdf
+# ELF format
+
+There are two main aspects of that this format take into consideration
+
+ 1. how to statically link
+ 2. how to load a program in memory and to execute it
+
+Reference to <http://www.sco.com/developers/devspecs/gabi41.pdf>.
 '''
 from enum import Enum
 

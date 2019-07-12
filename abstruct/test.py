@@ -31,6 +31,10 @@ from .common.crc import (
     CRCField,
 )
 
+from .compression.zip import (
+    ZIPHeader,
+)
+
 from .core import Chunk, Meta, Dependency, ChunkPhase
 from .streams import Stream
 from . import fields
@@ -453,4 +457,13 @@ class PNGTests(unittest.TestCase):
                 palettes = PLTEData(chunk.data.value)
                 for palette in palettes.palettes.value:
                     print(palette)
+
+
+class ZIPTests(unittest.TestCase):
+    def test_minimal(self):
+        path_minimal = os.path.join(os.path.dirname(__file__), '..', 'extra', 'minimal.zip')
+
+        zp = ZIPHeader(path_minimal)
+
+        print(zp)
 

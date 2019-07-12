@@ -163,6 +163,23 @@ class StructField(Field):
     real = RealStructField
 
 
+class RealBitField(RealStructField):
+    '''This class is useful when you know that the binary value in the
+    field is an set of different value ORed together.
+    '''
+    def __init__(self, bitfield_class, format, *args, **kwargs):
+        super().__init__(format, *args, **kwargs)
+        self._bitfield_class = bitfield_class
+
+    def unpack(self, stream):
+        super().unpack(stream)
+        self.value = self._bitfield_class(self.value)
+
+
+class BitField(Field):
+    real = RealBitField
+
+
 '''
 TODO: understand if it is needed to separate from Binary and alphanumeric strings.
 '''

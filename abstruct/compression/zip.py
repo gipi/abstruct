@@ -22,12 +22,17 @@ from ..properties import Dependency
 
 
 class ZIPFlags(Flag):
-    ENCRIPTED = 0
-    COMPRESSION_OPTIONLSB = 1 << 1
-    COMPRESSION_OPTIONMSB = 1 << 2
-    DATA_DESCRIPTOR = 1 << 3
-    ENHANCED_DEFLATION = 1 << 4
+    NONE                    = 0
+    ENCRIPTED               = 1 << 0
+    COMPRESSION_OPTIONLSB   = 1 << 1
+    COMPRESSION_OPTIONMSB   = 1 << 2
+    DATA_DESCRIPTOR         = 1 << 3
+    ENHANCED_DEFLATION      = 1 << 4
     COMPRESSED_PATCHED_DATA = 1 << 5
+    STRONG_ENCRYPTION       = 1 << 6
+    # from 7th to 10th are not used
+    LANGUAGE_ENCODING       = 1 << 11
+    MASK_HEADER             = 1 << 13
 
 
 

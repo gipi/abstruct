@@ -178,10 +178,10 @@ class RealELFSectionsField(fields.RealField):
         self.value = [] # reset the entries
         for field in self.header:
             section_type = field.sh_type.value
-            logger.debug('found section type %d' % section_type)
+            logger.debug('found section type %s' % section_type)
             logger.debug('offset: %d size: %d' % (field.sh_offset.value, field.sh_size.value))
 
-            if section_type == ElfSectionType.SHT_STRTAB.value:
+            if section_type == ElfSectionType.SHT_STRTAB:
                 logger.debug('unpacking string table')
                 # we need to unpack at most sh_size bytes
                 stream.seek(field.sh_offset.value)
@@ -189,7 +189,7 @@ class RealELFSectionsField(fields.RealField):
                 section.unpack(stream)
                 self.value.append(section)
                 print(section.value)
-            elif section_type == ElfSectionType.SHT_SYMTAB.value:
+            elif section_type == ElfSectionType.SHT_SYMTAB:
                 table_size = field.sh_size.value
                 logger.debug('unpacking symbol table')
                 n = int(table_size/SymbolTableEntry().size()) # FIXME: create Dependency w algebraic operation
@@ -202,7 +202,7 @@ class RealELFSectionsField(fields.RealField):
 
                 self.value.append(section)
                 print(section)
-            elif section_type == ElfSectionType.SHT_REL.value:
+            elif section_type == ElfSectionType.SHT_REL:
                 from .reloc import ElfRelEntry
                 table_size = field.sh_size.value
 

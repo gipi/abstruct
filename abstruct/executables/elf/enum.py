@@ -74,6 +74,15 @@ class ElfSectionType(Enum):
     SHT_REL      = 9
     SHT_SHLIB    = 10
     SHT_DYNSYM   = 11
+    # see <https://docs.oracle.com/cd/E19120-01/open.solaris/819-0690/6n33n7fcj/index.html>
+    SHT_INIT_ARRAY = 14
+    SHT_FINI_ARRAY = 15
+    SHT_PREINIT_ARRAY = 16
+    SHT_GROUP = 17
+    SHT_SYMTAB_SHNDX = 18
+    SHT_SUNW_SIGNATURE = 0x6ffffff6
+    SHT_SUNW_verneed = 0x6ffffffe
+    SHT_SUNW_versym = 0x6fffffff
     SHT_LOPROC   = 0x70000000
     SHT_HIPROC   = 0x7fffffff
     SHT_LOUSER   = 0x80000000

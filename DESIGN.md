@@ -140,6 +140,9 @@ If we unpack we should forget any possible dependencies and simply put the
 raw data; it would be necessary a method to check/fix discordant values
 (another problem would be, what values has priority).
 
+The physical order of the fields should be the order with which the fields
+are defined and the unpacking should follow that order.
+
 ### ``pack()``
 
 Here is a little complicated because one possibility is that we set the data
@@ -160,6 +163,9 @@ Think it in this way:
 
 We must return the byte representation of the given chunk, if a stream is passed
 it is used to store the data.
+
+Probably a more sane approach could be to reverse the packing order of the field
+with respect to the physical definition
 
 If we pack we should can choose between maintaining the sanity of the format
 updating with respect to the constraints of the format or pack as the fields

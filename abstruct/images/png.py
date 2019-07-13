@@ -66,5 +66,5 @@ class PLTEData(Chunk):
 
 class PNGFile(Chunk):
     header = fields.PNGHeaderField()
-    chunks = fields.ArrayField(PNGChunk)
+    chunks = fields.ArrayField(PNGChunk, canary=lambda x:x.type.value == b'IEND')
 

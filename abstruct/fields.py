@@ -233,11 +233,14 @@ class StringNullTerminatedField(Field):
 class RealArrayField(RealField):
     '''Un/Pack an array of Chunks.
 
-    TODO: add a parameter to choose when the array must stop, like a particular data value.
+    You can indicate an explicite number of elements via the parameter named "n"
+    or you can indicate with a callable returning True which element is the terminator
+    for the list via the parameter named "canary".
     '''
-    def __init__(self, field_cls, n=None, **kw):
+    def __init__(self, field_cls, n=None, canary=None, **kw):
         self.field_cls = field_cls
         self.n = n
+        self._canary = canary
 
         if n and not (isinstance(n, Dependency) or isinstance(n, int)):
             raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
@@ -303,15 +306,18 @@ class RealArrayField(RealField):
         for idx in range(real_n):
             element = self.field_cls()
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
-            try:
-                element_offset = stream.tell()
-                element.unpack(stream)
-                element.offset = element_offset
 
-                self.value.append(element)
-            except:
-                self.n = idx
-                break
+            element_offset = stream.tell()
+            element.unpack(stream)
+            element.offset = element_offset
+
+            self.value.append(element)
+
+            if self._canary is not None:
+                if self._canary(element):
+                    self.n = idx
+                    break
+
 
 class ArrayField(Field):
     real = RealArrayField

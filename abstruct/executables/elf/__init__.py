@@ -7,6 +7,11 @@ There are two main aspects of that this format take into consideration
  2. how to load a program in memory and to execute it
 
 Reference to <http://www.sco.com/developers/devspecs/gabi41.pdf>.
+
+This <https://docs.oracle.com/cd/E19120-01/open.solaris/819-0690/6n33n7fcd/index.html> seems
+a more complete reference for the format (take into consideration that exist a general
+reference (linked before) and then each architecture has its own document that address
+specific aspect).
 '''
 from enum import Enum
 
@@ -39,7 +44,7 @@ class ElfHeader(Chunk):
 #       segments must precede them!
 class SectionHeader(Chunk):
     sh_name      = fields.StructField('i')
-    sh_type      = fields.StructField('i')
+    sh_type      = fields.BitField(ElfSectionType, 'i')
     sh_flags     = fields.StructField('i')
     sh_addr      = fields.StructField('i')
     sh_offset    = fields.StructField('i')

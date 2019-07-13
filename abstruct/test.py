@@ -338,14 +338,16 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)
 
         # sections
+        SECTIONS_NUMBER = 30
         self.assertEqual(elf.elf_header.e_ehsize.value, 52)
-        self.assertEqual(elf.elf_header.e_shnum.value, 30)
+        self.assertEqual(elf.sections.n, SECTIONS_NUMBER)
+        self.assertEqual(elf.elf_header.e_shnum.value, SECTIONS_NUMBER)
         self.assertEqual(elf.elf_header.e_shstrndx.value, 29)
-        self.assertEqual(elf.sections.n, 30)
-        self.assertEqual(len(elf.sections), 30)
-        self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB.value)
+        self.assertEqual(len(elf.sections), SECTIONS_NUMBER)
+        self.assertEqual(len(elf.sections_data.value), SECTIONS_NUMBER)
+        self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB)
         self.assertEqual(elf.sections.value[29].offset, 7212)
-        self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB.value)
+        self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB)
         # programs
         self.assertEqual(elf.elf_header.e_phentsize.value, 32)
         self.assertEqual(elf.elf_header.e_phnum.value, 9)

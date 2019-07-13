@@ -47,6 +47,21 @@ class ElfSegmentType(Enum):
     PT_NOTE    = 4
     PT_SHLIB   = 5
     PT_PHDR    = 6
+    # see <https://docs.oracle.com/cd/E19120-01/open.solaris/819-0690/chapter6-14428/index.html>
+    PT_LOOS  = 0x60000000
+    PT_SUNW_UNWIND = 0x6464e550
+    # see <https://refspecs.linuxfoundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic.html#PROGHEADER>
+    PT_SUNW_EH_FRAME = 0x6474e550
+    PT_GNU_EH_FRAME	= 0x6474e550
+    PT_GNU_STACK = 0x6474e551
+    PT_GNU_RELRO = 0x6474e552
+    PT_LOSUNW = 0x6ffffffa
+    PT_SUNWBSS = 0x6ffffffa
+    PT_SUNWSTACK = 0x6ffffffb
+    PT_SUNWDTRACE = 0x6ffffffc
+    PT_SUNWCAP = 0x6ffffffd
+    PT_HISUNW = 0x6fffffff
+    PT_HIOS = 0x6fffffff
     PT_LOPROC  = 0x70000000
     PT_HIPROC  = 0x7fffffff
 

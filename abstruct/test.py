@@ -354,7 +354,7 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(len(elf.programs), 9)
         self.assertEqual( # we remove the last three elements since have not well defined type
             [_.p_type.value for _ in elf.programs.value[:-3]],
-            [_.value for _ in [
+            [_ for _ in [
                 ElfSegmentType.PT_PHDR,
                 ElfSegmentType.PT_INTERP,
                 ElfSegmentType.PT_LOAD,

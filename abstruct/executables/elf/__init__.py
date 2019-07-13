@@ -56,7 +56,7 @@ class SectionHeader(Chunk):
 
 
 class ProgramHeader(Chunk):
-    p_type   = fields.StructField('I')
+    p_type   = fields.BitField(ElfSegmentType, 'I')
     p_offset = fields.StructField('I')
     p_vaddr  = fields.StructField('I')
     p_paddr  = fields.StructField('I')

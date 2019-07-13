@@ -255,10 +255,10 @@ class RealELFSegmentsField(fields.RealField):
         self.value = [] # reset the entries
         for field in self.header:
             segment_type = field.p_type.value
-            logger.debug('found section type %d' % segment_type)
+            logger.debug('found section type %s' % segment_type)
             logger.debug('offset: %d size: %d' % (field.p_offset.value, field.p_filesz.value))
 
-            if segment_type == ElfSegmentType.PT_INTERP.value:
+            if segment_type == ElfSegmentType.PT_INTERP:
                 interp = ELFInterpol(offset=field.p_offset.value, size=field.p_filesz.value)
 
                 real_offset = field.p_offset

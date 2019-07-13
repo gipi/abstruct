@@ -286,7 +286,7 @@ class FieldsTests(unittest.TestCase):
 class ELFTest(unittest.TestCase):
     def test_string_table(self):
         table = b'\x00ABCD\x00EFGH\x00'
-        string_table = RealSectionStringTable(size=len(table))
+        string_table = elf_fields.RealSectionStringTable(size=len(table))
 
         string_table.unpack(Stream(table))
         self.assertEqual(len(string_table.value), 3)
@@ -296,7 +296,7 @@ class ELFTest(unittest.TestCase):
             'EFGH',
         ])
 
-        string_table = RealSectionStringTable(default=['', 'miao', 'bau'])
+        string_table = elf_fields.RealSectionStringTable(default=['', 'miao', 'bau'])
         s = Stream(b'')
         string_table.pack(s)
 

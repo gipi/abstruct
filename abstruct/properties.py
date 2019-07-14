@@ -79,6 +79,17 @@ class Dependency(object):
         return value
 
 
+class RatioDependency(Dependency):
+    def __init__(self,ratio, expression, obj=None):
+        super().__init__(expression, obj)
+        self._ratio = ratio
+
+    def resolve(self, instance):
+        value = super().resolve(instance)
+
+        return int(value/self._ratio)
+
+
 # NOTE: we need the caller to seek() correctly a given offset
 #       if it depends on external fields
 #       It's different with respect to Dependency() since

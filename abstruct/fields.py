@@ -38,6 +38,7 @@ class RealField(object):
         self.default = default
         self.offset = offset
         self._value = None
+        self._data = None
         self.little_endian = little_endian
         self.formatter = formatter if formatter else '%s'
 
@@ -143,6 +144,10 @@ class RealStructField(RealField):
     def size(self):
         return struct.calcsize(self.format)
 
+    @property
+    def data(self):
+        return self._data
+
     def pack(self, stream=None, relayout=True):
         self._update_value()
         packed_value = struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
@@ -156,8 +161,8 @@ class RealStructField(RealField):
         return stream.getvalue()
 
     def unpack(self, stream):
-        value = stream.read(self.size())
-        self.value = struct.unpack('%s%s' % ('<' if self.little_endian else '>', self.format), value)[0]
+        self._data = stream.read(self.size())
+        self.value = struct.unpack('%s%s' % ('<' if self.little_endian else '>', self.format), self._data)[0]
 
 
 class StructField(Field):
@@ -203,6 +208,10 @@ class RealStringField(RealField):
 
     def size(self):
         return self.n
+
+    @property
+    def data(self):
+        return self.value
 
     def pack(self, stream=None, relayout=True):
         stream = Stream(b'') if not stream else stream
@@ -258,6 +267,14 @@ class RealArrayField(RealField):
 
     def count(self):
         return self.n
+
+    @property
+    def data(self):
+        value = b''
+        for element in self.value:
+            value += element.data
+
+        return value
 
     def size(self):
         size = 0
@@ -360,6 +377,10 @@ class RealSelectField(RealField):
 
     def _get_value(self):
         return self._field.value
+
+    @property
+    def data(self):
+        return self._field.data
 
     def unpack(self, stream):
         logger.debug('resolving key \'%s\'' % self._key)

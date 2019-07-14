@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from enum import Flag
 
 
 from .executables.elf import (
@@ -248,6 +249,36 @@ class FieldsTests(unittest.TestCase):
         self.assertTrue(hasattr(d, 'chunks'))
         self.assertEqual(len(d.chunks.value), 3)
         self.assertTrue(isinstance(d.chunks.value, list))
+
+    def test_select(self):
+        class DummyType(Flag):
+            FIRST = 0
+            SECOND = 1
+
+        type2field = {
+            DummyType.FIRST: fields.RealStructField('I'),
+            DummyType.SECOND: fields.RealStringField(0x10)
+        }
+
+        class DummyChunk(Chunk):
+            type = fields.BitField(DummyType, 'I')
+            data = fields.SelectField('type', type2field)
+
+        dummy = DummyChunk()
+
+        # first we try to unpack the FIRST type
+        data = b'\x00\x00\x00\x00\x01\x02\x03\x04'
+        dummy.unpack(Stream(data))
+
+        self.assertEqual(dummy.type.value, DummyType.FIRST)
+        self.assertEqual(dummy.data.value, 0x04030201)
+
+        # then we try the SECOND type
+        data = b'\x01\x00\x00\x00\x0f\x0e\x0d\x0c\x0b\x0a\x09\x08\x07\x06\x05\x04\x03\x02\x01\x00'
+        dummy.unpack(Stream(data))
+
+        self.assertEqual(dummy.type.value, DummyType.SECOND)
+        self.assertEqual(dummy.data.value, b'\x0f\x0e\x0d\x0c\x0b\x0a\x09\x08\x07\x06\x05\x04\x03\x02\x01\x00')
 
     def test_dependency(self):
         class DummyChunk(Chunk):

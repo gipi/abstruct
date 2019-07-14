@@ -1,5 +1,6 @@
 import logging
 import struct
+from enum import Flag, auto
 
 from .properties import Dependency, ChunkPhase
 from .streams import Stream
@@ -322,23 +323,58 @@ class RealArrayField(RealField):
 class ArrayField(Field):
     real = RealArrayField
 
-class RealSelectField(RealField):
-    '''Associate a field with a given Chunk based on a given condition'''
-    def __init__(self, fields, expression, *args, **kwargs):
-        self.fields = fields
-        self.expression = expression
 
+class RealSelectField(RealField):
+    '''Allow to select the kind of final field based on condition
+    in the parent chunk. You need to pass the name of the field
+    to use as key and a dictionary with the mapping between type
+    and field. You can use Type.DEFAULT as a default.
+
+    Like in the following example we have a format the use the first 4 bytes
+    to indicate what follows: for value zero you have another 4 bytes, otherwise
+    you have a ten bytes string
+
+        class DummyType(Flag):
+            FIRST = 0
+            SECOND = 1
+
+        type2field = {
+            DummyType.FIRST: fields.StructField('I'),
+            DummyType.SECOND: fields.StringField(0x10)
+        }
+
+        class DummyChunk(Chunk):
+            type = fields.BitField(DummyType, 'I')
+            data = fields.SelectField('type', type2field)
+    '''
+    class Type(Flag):
+        DEFAULT = auto()
+
+    def __init__(self, key, mapping, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._key = key
+        self._mapping = mapping
 
     def init(self):
         pass
 
+    def _get_value(self):
+        return self._field.value
+
     def unpack(self, stream):
-        select = self.expression.resolve(self)
+        logger.debug('resolving key \'%s\'' % self._key)
+        field_key = getattr(self.father, self._key)
 
-        field = self.fields[select]()
+        key = field_key.value if field_key.value in self._mapping else RealSelectField.Type.DEFAULT
 
-        field.unpack(stream)
+        logger.debug('resolved key to \'%s\' (original was \'%s\')' % (key, field_key.value))
+
+        self._field = self._mapping[key]
+        self._field.father = self.father # FIXME
+        logger.debug('found field %s' % repr(self._field))
+
+        self._field.unpack(stream)
+        logger.debug('unpacked %s' % self._field)
 
 
 class SelectField(Field):

@@ -151,6 +151,15 @@ class Chunk(metaclass=MetaChunk):
 
         return size
 
+    @property
+    def data(self):
+        value = b''
+        for field_name, _ in self._meta.fields:
+            field = getattr(self, field_name)
+            value += field.data
+
+        return value
+
     def relayout(self):
         '''This method triggers the chunk and its children to reset the offsets
         and the phase in order to pack correctly'''

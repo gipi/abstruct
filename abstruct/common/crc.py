@@ -16,7 +16,7 @@ class RealCRCField(fields.RealStructField):
         value = b''
         for field_name in self.fields:
             field = getattr(self.father, field_name)
-            value += field.pack()
+            value += field.data
 
         return crc32(value)
 

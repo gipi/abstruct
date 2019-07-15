@@ -190,17 +190,12 @@ class BitField(Field):
 TODO: understand if it is needed to separate from Binary and alphanumeric strings.
 '''
 class RealStringField(RealField):
-    def __init__(self, n, padding=0, **kw):
-        self.n = n
-        self.padding = padding
-
+    def __init__(self, n=0, **kw):
         super().__init__(**kw)
+        self.n = n
 
     def init(self):
         self.default = b'\x00' * self.n if not self.default else self.default
-        padding = self.n - len(self.default)
-        if padding < 0:
-            raise ValueError('the default is longer than the "n" parameter')
 
     def _set_value(self, value):
         super()._set_value(value)
@@ -227,7 +222,7 @@ class RealStringField(RealField):
 
 
 class StringField(Field):
-    '''This in an array of "n" char with padding'''
+    '''This in an array of "n" char'''
     real = RealStringField
 
 class StringNullTerminatedField(Field):

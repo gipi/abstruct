@@ -1,6 +1,6 @@
 import logging
 import struct
-from enum import Flag, auto
+from enum import Enum, Flag, auto
 
 from .properties import Dependency, ChunkPhase
 from .streams import Stream
@@ -8,6 +8,13 @@ from .streams import Stream
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+class Endianess(Enum):
+    LITTLE_ENDIAN = auto()
+    BIG_ENDIAN    = auto()
+    NETWORK       = auto()
+    NATIVE        = auto()
 
 
 '''
@@ -141,8 +148,11 @@ class RealStructField(RealField):
         self.format = format
         super().__init__(default=default if not equals_to else equals_to, **kw)
 
+    def get_format(self):
+        return '%s%s' % ('<' if self.little_endian else '>', self.format)
+
     def size(self):
-        return struct.calcsize(self.format)
+        return struct.calcsize(self.get_format())
 
     @property
     def data(self):
@@ -150,7 +160,7 @@ class RealStructField(RealField):
 
     def pack(self, stream=None, relayout=True):
         self._update_value()
-        packed_value = struct.pack('%s%s' % ('<' if self.little_endian else '>', self.format), self.value)
+        packed_value = struct.pack(self.get_format(), self.value)
 
         stream = stream if stream else Stream(b'')
 
@@ -162,7 +172,7 @@ class RealStructField(RealField):
 
     def unpack(self, stream):
         self._data = stream.read(self.size())
-        self.value = struct.unpack('%s%s' % ('<' if self.little_endian else '>', self.format), self._data)[0]
+        self.value = struct.unpack(self.get_format(), self._data)[0]
 
 
 class StructField(Field):

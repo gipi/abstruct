@@ -284,7 +284,7 @@ class FieldsTests(unittest.TestCase):
         class DummyChunk(Chunk):
             magic = fields.StringField(n=5, default=b"HELLO")
             garbage = fields.StringField(0x10)
-            dummy_size = fields.StructField('<I', equals_to=Dependency('size'))
+            dummy_size = fields.StructField('I', equals_to=Dependency('size'))
 
         dummy = DummyChunk()
 

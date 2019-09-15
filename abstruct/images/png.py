@@ -10,12 +10,43 @@ from abstruct.core import Chunk
 from abstruct import (
     fields,
 )
-from abstruct.properties import Dependency
+from abstruct.properties import Dependency, RatioDependency
 from abstruct.common import crc
+
+
+class IHDRData(Chunk):
+    width = fields.StructField('I', little_endian=False)
+    height = fields.StructField('I', little_endian=False)
+    depth = fields.StructField('c')
+    color = fields.StructField('c')
+    compression = fields.StructField('c')
+    filter = fields.StructField('c')
+    interlace = fields.StructField('c')
+
+    def __str__(self):
+        return '%dx%dx%d' % (
+            self.width.value,
+            self.height.value,
+            ord(self.depth.value),
+        )
+
+
+class PLTEEntry(Chunk):
+    red   = fields.StructField('c')
+    green = fields.StructField('c')
+    blue  = fields.StructField('c')
 
 
 class PNGHeader(Chunk):
     magic = fields.StringField(8, default=b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a')
+
+
+type2field = {
+    b'IHDR': IHDRData(),
+    b'PLTE': fields.RealArrayField(PLTEEntry, n=RatioDependency(3, 'length')),
+    b'gAMA': fields.RealStringField(Dependency('length')),
+    fields.RealSelectField.Type.DEFAULT: fields.RealStringField(Dependency('length')),
+}
 
 
 class PNGChunk(Chunk):
@@ -37,31 +68,11 @@ class PNGChunk(Chunk):
     '''
     length = fields.StructField('I', little_endian=False) # big endian
     type   = fields.StringField(4)
-    data   = fields.StringField(Dependency('length'))
-    crc    = crc.CRCField(['type', 'data'], little_endian=False) # network byte order
+    Data   = fields.SelectField('type', type2field)
+    crc    = crc.CRCField(['type', 'Data'], little_endian=False) # network byte order
 
     def isCritical(self):
         return chr(self.type.value[0]).isupper()
-
-
-class IHDRData(Chunk):
-    width = fields.StructField('I', little_endian=False)
-    height = fields.StructField('I', little_endian=False)
-    depth = fields.StructField('c')
-    color = fields.StructField('c')
-    compression = fields.StructField('c')
-    filter = fields.StructField('c')
-    interlace = fields.StructField('c')
-
-
-class PLTEEntry(Chunk):
-    red   = fields.StructField('c')
-    green = fields.StructField('c')
-    blue  = fields.StructField('c')
-
-
-class PLTEData(Chunk):
-    palettes = fields.ArrayField(PLTEEntry)
 
 
 class PNGFile(Chunk):

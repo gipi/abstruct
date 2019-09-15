@@ -335,13 +335,13 @@ class ELFTest(unittest.TestCase):
 
     def test_empty(self):
         elf = ElfFile()
-        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC.value)
+        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC)
         self.assertEqual(elf.elf_header.e_ehsize.value, 52)
 
     def test_minimal_from_zero(self):
         elf = ElfFile()
         str_header = SectionHeader()
-        str_header.sh_type.value = ElfSectionType.SHT_STRTAB.value
+        str_header.sh_type.value = ElfSectionType.SHT_STRTAB
         elf.sections.value.append(str_header)
         with open('/tmp/minimal', 'wb') as f:
             f.write(elf.pack())
@@ -361,12 +361,12 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_ident.EI_MAG1.value, b'E')
         self.assertEqual(elf.elf_header.e_ident.EI_MAG2.value, b'L')
         self.assertEqual(elf.elf_header.e_ident.EI_MAG3.value, b'F')
-        self.assertEqual(elf.elf_header.e_ident.EI_CLASS.value, ElfEIClass.ELFCLASS32.value)
-        self.assertEqual(elf.elf_header.e_ident.EI_DATA.value, ElfEIData.ELFDATA2LSB.value)
+        self.assertEqual(elf.elf_header.e_ident.EI_CLASS.value, ElfEIClass.ELFCLASS32)
+        self.assertEqual(elf.elf_header.e_ident.EI_DATA.value, ElfEIData.ELFDATA2LSB)
 
 
-        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN.value) # WHY IS COMPILED AS DYN? ALIENS!
-        self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386.value)
+        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN) # WHY IS COMPILED AS DYN? ALIENS!
+        self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386)
 
         # sections
         SECTIONS_NUMBER = 30

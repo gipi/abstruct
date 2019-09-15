@@ -13,21 +13,26 @@ a more complete reference for the format (take into consideration that exist a g
 reference (linked before) and then each architecture has its own document that address
 specific aspect).
 '''
-from enum import Enum
-
 from ...core import Chunk, Dependency
 from . import fields as elf_fields
-from .enum import *
+from .enum import (
+    ElfType,
+    ElfMachine,
+    ElfVersion,
+    ElfSectionType,
+    ElfSegmentType,
+    ElfSegmentFlag,
+)
 from ... import fields
 from ...properties import Offset
 
 
 class ElfHeader(Chunk):
     e_ident     = fields.ElfIdentField()
-    e_type      = fields.StructField('H', default=ElfType.ET_EXEC.value)
-    e_machine   = fields.StructField('H', default=ElfMachine.EM_386.value)
-    e_version   = fields.StructField('I', default=ElfVersion.EV_CURRENT.value)
-    e_entry     = fields.StructField('I')
+    e_type      = fields.BitField(ElfType, 'H', default=ElfType.ET_EXEC)
+    e_machine   = fields.BitField(ElfMachine, 'H', default=ElfMachine.EM_386)
+    e_version   = fields.BitField(ElfVersion, 'I', default=ElfVersion.EV_CURRENT)
+    e_entry     = elf_fields.Elf_Addr()
     e_phoff     = fields.StructField('I')
     e_shoff     = fields.StructField('I')
     e_flags     = fields.StructField('I')
@@ -44,7 +49,7 @@ class ElfHeader(Chunk):
 #       segments must precede them!
 class SectionHeader(Chunk):
     sh_name      = fields.StructField('i')
-    sh_type      = fields.BitField(ElfSectionType, 'i')
+    sh_type      = fields.BitField(ElfSectionType, 'i', default=ElfSectionType.SHT_NULL)
     sh_flags     = fields.StructField('i')
     sh_addr      = fields.StructField('i')
     sh_offset    = fields.StructField('i')
@@ -56,13 +61,13 @@ class SectionHeader(Chunk):
 
 
 class ProgramHeader(Chunk):
-    p_type   = fields.BitField(ElfSegmentType, 'I')
+    p_type   = fields.BitField(ElfSegmentType, 'I', default=ElfSegmentType.PT_NULL)
     p_offset = fields.StructField('I')
     p_vaddr  = fields.StructField('I')
     p_paddr  = fields.StructField('I')
     p_filesz = fields.StructField('I')
     p_memsz  = fields.StructField('I')
-    p_flags  = fields.StructField('I')
+    p_flags  = fields.BitField(ElfSegmentFlag, 'I')
     p_align  = fields.StructField('I')
 
 

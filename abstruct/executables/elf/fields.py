@@ -24,10 +24,12 @@ class ElfIdent(Chunk):
     EI_MAG1 = fields.StructField('c', default=b'E')
     EI_MAG2    = fields.StructField('c', default=b'L')
     EI_MAG3    = fields.StructField('c', default=b'F')
-    EI_CLASS   = fields.StructField('B', default=ElfEIClass.ELFCLASS32.value) # determines the architecture
-    EI_DATA    = fields.StructField('B', default=ElfEIData.ELFDATA2LSB.value) # determines the endianess of the binary data
-    EI_VERSION = fields.StructField('B', default=1) # always 1
-    EI_PAD     = fields.StringField(9)
+    EI_CLASS   = fields.BitField(ElfEIClass, 'B', default=ElfEIClass.ELFCLASS32)  # determines the architecture
+    EI_DATA    = fields.BitField(ElfEIData, 'B', default=ElfEIData.ELFDATA2LSB)  # determines the endianess of the binary data
+    EI_VERSION = fields.StructField('B', default=1)  # always 1
+    EI_OSABI   = fields.BitField(ElfOsABI, 'B', default=ElfOsABI.ELFOSABI_GNU)
+    EI_ABIVERSION = fields.StructField('B')
+    EI_PAD     = fields.StringField(7)
 
 
 # TODO: create BoolFromDependency that use the EI_CLASS from the ELF header

@@ -1,4 +1,9 @@
-from enum import Enum
+'''
+This module contains the constant values used throught the ELF specification.
+
+Note: use Enum for value that cannot ORed together, Flag for the others.
+'''
+from enum import Enum, Flag
 
 
 class ElfType(Enum):
@@ -39,6 +44,26 @@ class ElfEIData(Enum):
     ELFDATA2MSB = 2
 
 
+class ElfOsABI(Enum):
+    ELFOSABI_NONE = 0
+    ELFOSABI_HPUX = 1
+    ELFOSABI_NETBSD = 2
+    ELFOSABI_GNU = 3
+    ELFOSABI_SOLARIS = 6
+    ELFOSABI_AIX = 7
+    ELFOSABI_IRIX = 8
+    ELFOSABI_FREEBSD = 9
+    ELFOSABI_TRU64 = 10
+    ELFOSABI_MODESTO = 11
+    ELFOSABI_OPENBSD = 12
+    ELFOSABI_OPENVMS = 13
+    ELFOSABI_NSK = 14
+    ELFOSABI_AROS = 15
+    ELFOSABI_FENIXOS = 16
+    ELFOSABI_CLOUDABI = 17
+    ELFOSABI_OPENVOS = 18
+
+
 class ElfSegmentType(Enum):
     PT_NULL = 0
     PT_LOAD = 1
@@ -64,6 +89,12 @@ class ElfSegmentType(Enum):
     PT_HIOS = 0x6fffffff
     PT_LOPROC  = 0x70000000
     PT_HIPROC  = 0x7fffffff
+
+
+class ElfSegmentFlag(Flag):
+    PF_X = 0x01
+    PF_W = 0x02
+    PF_R = 0x04
 
 
 class ElfSectionIndex(Enum):
@@ -108,3 +139,16 @@ class ElfSectionAttributeFlag(Enum):
     SHF_ALLOC     = 0x02
     SHF_EXECINSTR = 0x04
 
+
+class ElfSymbolBindType(Enum):
+    STB_LOCAL  = 0x00
+    STB_GLOBAL = 0x01
+    STB_WEAK   = 0x02
+
+
+class ElfSymbolType(Enum):
+    STT_NOTYPE = 0x00
+    STT_OBJECT = 0x01
+    STT_FUNC   = 0x02
+    STT_SECTION = 0x03
+    STT_FILE   = 0x04

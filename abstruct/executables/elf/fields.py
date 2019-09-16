@@ -4,12 +4,20 @@
 Executable and Linkage Format is a file format vastly used in the *nix world.
 
 '''
-from enum import Enum
 import logging
 
 from ... import fields
 from ...core import Chunk
-from .enum import *
+from .enum import (
+    ElfEIClass,
+    ElfEIData,
+    ElfOsABI,
+    ElfSectionType,
+    ElfSegmentType,
+    ElfSymbolBindType,
+    ElfSymbolType,
+)
+from ...properties import Dependency
 
 
 logger = logging.getLogger(__name__)
@@ -24,47 +32,96 @@ class ElfIdent(Chunk):
     EI_MAG1 = fields.StructField('c', default=b'E')
     EI_MAG2    = fields.StructField('c', default=b'L')
     EI_MAG3    = fields.StructField('c', default=b'F')
-    EI_CLASS   = fields.BitField(ElfEIClass, 'B', default=ElfEIClass.ELFCLASS32)  # determines the architecture
-    EI_DATA    = fields.BitField(ElfEIData, 'B', default=ElfEIData.ELFDATA2LSB)  # determines the endianess of the binary data
+    EI_CLASS   = fields.StructField('B', enum=ElfEIClass, default=ElfEIClass.ELFCLASS32)  # determines the architecture
+    EI_DATA    = fields.StructField('B', enum=ElfEIData, default=ElfEIData.ELFDATA2LSB)  # determines the endianess of the binary data
     EI_VERSION = fields.StructField('B', default=1)  # always 1
-    EI_OSABI   = fields.BitField(ElfOsABI, 'B', default=ElfOsABI.ELFOSABI_GNU)
+    EI_OSABI   = fields.StructField('B', enum=ElfOsABI, default=ElfOsABI.ELFOSABI_GNU)
     EI_ABIVERSION = fields.StructField('B')
     EI_PAD     = fields.StringField(7)
 
 
 # TODO: create BoolFromDependency that use the EI_CLASS from the ELF header
 #       and generates the endianess to pass via the little_endian parameter.
-class RealElf_Addr(fields.RealStructField):
-    '''Wrapper for the fundamental datatype of the ELF format'''
+class RealElf_DataType(fields.RealStructField):
+    '''Wrapper for all the datatype that resolves internally to the EI_CLASS'''
+
     def __init__(self, **kwargs):
+        self._elf_class = Dependency('elf_header.e_ident.EI_CLASS')
+        kwargs['endianess'] = Dependency('elf_header.e_ident.EI_DATA')
         super().__init__('I', **kwargs)
 
+    def get_format(self):
+        # import ipdb; ipdb.set_trace()
+        return '%s%s' % (
+            '<' if self.endianess == ElfEIData.ELFDATA2LSB else '>',
+            self.MAP_CLASS_TYPE[self._elf_class],
+        )
 
-class RealElf_Sword(fields.RealStructField):
+
+class RealElf_Addr(RealElf_DataType):
+    '''Unsigned program address'''
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'I',
+        ElfEIClass.ELFCLASS64: 'Q',
+    }
+
+
+class RealElf_Off(RealElf_DataType):
+    '''Unsigned file offset'''
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'I',
+        ElfEIClass.ELFCLASS64: 'Q',
+    }
+
+
+class RealElf_Sword(RealElf_DataType):
     '''Wrapper for the fundamental datatype of the ELF format'''
-    def __init__(self, **kwargs):
-        super().__init__('I', **kwargs)
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'I',
+        ElfEIClass.ELFCLASS64: 'I',
+    }
 
 
-class RealElf_Word(fields.RealStructField):
+class RealElf_Xword(RealElf_DataType):
+    ''''''
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'I',
+        ElfEIClass.ELFCLASS64: 'Q',
+    }
+
+
+class RealElf_Sxword(RealElf_DataType):
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'Q',
+        ElfEIClass.ELFCLASS64: 'Q',
+    }
+
+
+class RealElf_Word(RealElf_DataType):
     '''Wrapper for the fundamental datatype of the ELF format'''
-    def __init__(self, **kwargs):
-        super().__init__('I', **kwargs)
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'I',
+        ElfEIClass.ELFCLASS64: 'I',
+    }
 
 
-class RealElf_Half(fields.RealStructField):
+class RealElf_Half(RealElf_DataType):
     '''Wrapper for the fundamental datatype of the ELF format'''
-    def __init__(self, **kwargs):
-        super().__init__('H', **kwargs)
+
+    MAP_CLASS_TYPE = {
+        ElfEIClass.ELFCLASS32: 'H',
+        ElfEIClass.ELFCLASS64: 'H',
+    }
 
 
-class RealElf_Off(fields.RealStructField):
-    '''Wrapper for the fundamental datatype of the ELF format'''
-    def __init__(self, **kwargs):
-        super().__init__('I', **kwargs)
+class ELFInterpol(Chunk):  # TODO: use StringField
 
-
-class ELFInterpol(Chunk): # TODO: use StringField
     def __init__(self, *args, size=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -73,20 +130,33 @@ class ELFInterpol(Chunk): # TODO: use StringField
     def unpack(self, stream):
         self.value = stream.read(self._size)
 
+
+class Elf_Addr(fields.StructField):
+    real = RealElf_Addr
+
+
+class Elf_Off(fields.StructField):
+    real = RealElf_Off
+
+
 class Elf_Sword(fields.Field):
     real = RealElf_Sword
+
+
+class Elf_Xword(fields.Field):
+    real = RealElf_Xword
 
 
 class Elf_Word(fields.Field):
     real = RealElf_Word
 
 
+class Elf_Sxword(fields.Field):
+    real = RealElf_Sxword
+
+
 class Elf_Half(fields.Field):
     real = RealElf_Half
-
-
-class Elf_Addr(fields.Field):
-    real = RealElf_Addr
 
 
 from .reloc import RelocationTable
@@ -137,11 +207,35 @@ class SectionStringTable(fields.Field):
     real = RealSectionStringTable
 
 
+class RealSymbolInfoField(fields.RealStructField):
+    '''
+#define ELF32_ST_BIND(i) (( i ) >> 4)
+#define ELF32_ST_TYPE(i) (( i ) & 0xf)
+#define ELF32_ST_INFO(b, t) ((( b ) << 4) + (( t ) & 0xf))
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__('B', *args, **kwargs)
+
+    def __str__(self):
+        return '<Info(%s,%s)>' % (self.bind, self.type)
+
+    def unpack(self, stream):
+        '''it reads and then split the values in bind and type'''
+        super().unpack(stream)
+        self.bind = ElfSymbolBindType(self.value >> 4)
+        self.type = ElfSymbolType(self.value & 0x0f)
+
+
+class SymbolInfoField(fields.StructField):
+    real = RealSymbolInfoField
+
+
 class SymbolTableEntry(Chunk):
     st_name  = Elf_Word()
     st_value = Elf_Addr()
-    st_size  = Elf_Word()
-    st_info  = fields.StringField(0x01)
+    st_size  = Elf_Xword()
+    st_info  = SymbolInfoField()
     st_other = fields.StringField(0x01)
     st_shndx = Elf_Half()
 

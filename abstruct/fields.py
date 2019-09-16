@@ -23,8 +23,11 @@ the fields need to have separate instances to interact with, we need
 the XFIeld() associated to the chunk to be constructor for the XChunk().
 '''
 
+
 class Field(object):
+
     real = None
+
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -37,9 +40,11 @@ class Field(object):
             raise AttributeError('property \'real\' is None')
         return self.real(*self.args, father=father, **self.kwargs)
 
+
 class RealField(object):
-    def __init__(self, *args, father=None, default=None, offset=None, little_endian=True, formatter=None, **kwargs):
-        self._resolve = True # TODO: create contextmanager
+
+    def __init__(self, *args, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, **kwargs):
+        self._resolve = True  # TODO: create contextmanager
         self._phase = ChunkPhase.INIT
         self.father = father
         self.default = default
@@ -86,7 +91,7 @@ class RealField(object):
         except AttributeError:
             pass
         finally:
-            self.__dict__['_resolve'] = True # FIXME
+            self.__dict__['_resolve'] = True  # FIXME
 
         super().__setattr__(name, value)
 
@@ -120,7 +125,7 @@ class RealField(object):
         fset=lambda self, value: self._set_value(value))
 
     def relayout(self):
-        self._resolve = False # we don't want the automagical resolution
+        self._resolve = False  # we don't want the automagical resolution
         if not isinstance(self.offset, Dependency):
             self.offset = None
             self._phase = ChunkPhase.PROGRESS
@@ -144,7 +149,8 @@ class RealField(object):
 
 
 class RealStructField(RealField):
-    def __init__(self, format, default=0, equals_to=None, **kw): # decide between default and equals_to
+
+    def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
         self.format = format
         super().__init__(default=default if not equals_to else equals_to, **kw)
 
@@ -196,10 +202,9 @@ class BitField(Field):
     real = RealBitField
 
 
-'''
-TODO: understand if it is needed to separate from Binary and alphanumeric strings.
-'''
+# TODO: understand if it is needed to separate from Binary and alphanumeric strings.
 class RealStringField(RealField):
+
     def __init__(self, n=0, **kw):
         super().__init__(**kw)
         self.n = n
@@ -235,7 +240,9 @@ class StringField(Field):
     '''This in an array of "n" char'''
     real = RealStringField
 
+
 class StringNullTerminatedField(Field):
+
     def __init__(self, default='\x00', **kw):
         super().__init__(default=default, **kw)
 
@@ -245,6 +252,7 @@ class StringNullTerminatedField(Field):
     def pack(self, stream=None, relayout=True):
         return self.value
 
+
 class RealArrayField(RealField):
     '''Un/Pack an array of Chunks.
 
@@ -252,6 +260,7 @@ class RealArrayField(RealField):
     or you can indicate with a callable returning True which element is the terminator
     for the list via the parameter named "canary".
     '''
+
     def __init__(self, field_cls, n=None, canary=None, **kw):
         self.field_cls = field_cls
         self.n = n
@@ -263,7 +272,7 @@ class RealArrayField(RealField):
         if 'default' not in kw:
             kw['default'] = []
             if isinstance(n, int) and n > 0:
-                kw['default'] = [self.field_cls()]*self.n
+                kw['default'] = [self.field_cls()] * self.n
 
         super().__init__(**kw)
 
@@ -319,13 +328,13 @@ class RealArrayField(RealField):
             if count > 5:
                 raise ValueError('relayouting error for class %s' % self.__class__.__name__)
 
-        return data # FIXME
+        return data  # FIXME
 
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
-        self.value = [] # reset the fields already present
-        real_n = self.n if self.n is not None else 100 # FIXME
+        self.value = []  # reset the fields already present
+        real_n = self.n if self.n is not None else 100  # FIXME
         for idx in range(real_n):
             element = self.field_cls()
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
@@ -396,7 +405,7 @@ class RealSelectField(RealField):
         logger.debug('resolved key to \'%s\' (original was \'%s\')' % (key, field_key.value))
 
         self._field = self._mapping[key]
-        self._field.father = self.father # FIXME
+        self._field.father = self.father  # FIXME
         logger.debug('found field %s' % repr(self._field))
 
         self._field.unpack(stream)
@@ -409,13 +418,16 @@ class SelectField(Field):
     '''
     real = RealSelectField
 
+
 class RealPaddingField(RealField):
     '''Takes as much stream as possible'''
+
     def unpack(self, stream):
         self.value = stream.read_all()
 
     def init(self):
         pass
+
 
 class PaddingField(Field):
     real = RealPaddingField

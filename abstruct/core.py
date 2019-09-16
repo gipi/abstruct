@@ -1,5 +1,4 @@
 import logging
-import struct
 
 from .fields import *
 from .streams import Stream
@@ -17,7 +16,8 @@ class Meta(object):
         self.fields = []
 
 class MetaChunk(type):
-    def __new__(cls, names, bases , attrs):
+
+    def __new__(cls, names, bases, attrs):
         new_cls = super(MetaChunk, cls).__new__(cls, names, bases, {})
 
         new_cls._meta = Meta()
@@ -91,8 +91,8 @@ class Chunk(metaclass=MetaChunk):
         if self.stream:
             self.unpack(self.stream)
         else:
-            for name, _  in self.__class__._meta.fields:
-                getattr(self, name).init() # FIXME: understand init() logic :P
+            for name, _ in self.__class__._meta.fields:
+                getattr(self, name).init()  # FIXME: understand init() logic :P
 
     @classmethod
     def add_dependencies(cls, father, child_name, deps):

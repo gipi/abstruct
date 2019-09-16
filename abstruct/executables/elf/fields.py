@@ -159,7 +159,6 @@ class Elf_Half(fields.Field):
     real = RealElf_Half
 
 
-from .reloc import RelocationTable
 # TODO: maybe better subclass of Chunk with ArrayField as unique element?
 class RealSectionStringTable(fields.RealField):
     '''
@@ -169,6 +168,7 @@ class RealSectionStringTable(fields.RealField):
         2. ".strtab" names associated with the symbol table entries
         3. ".dynstr" names associated with dynamic linking
     '''
+
     def __init__(self, size=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._size = size
@@ -241,6 +241,7 @@ class SymbolTableEntry(Chunk):
 
 
 class SymbolTable(fields.RealArrayField):
+
     def __init__(self, *args, **kwargs):
         super().__init__(SymbolTableEntry, *args, **kwargs)
 
@@ -250,10 +251,11 @@ class RealELFSectionsField(fields.RealField):
     TODO: how do entry from this and the corresponding header behave wrt each other?
           if we remove the header, we remove the entry and vice versa?
     '''
+
     def __init__(self, header, *args, **kwargs):
         '''Use the header parameter to get the entries needed'''
         super().__init__(*args, **kwargs)
-        self.header = header # this MUST be a Dependency
+        self.header = header  # this MUST be a Dependency
 
     def init(self):
         pass
@@ -271,7 +273,7 @@ class RealELFSectionsField(fields.RealField):
             logger.debug('pack()()()')
 
     def unpack(self, stream):
-        self.value = [] # reset the entries
+        self.value = []  # reset the entries
         for field in self.header:
             section_type = field.sh_type.value
             logger.debug('found section type %s' % section_type)
@@ -288,7 +290,7 @@ class RealELFSectionsField(fields.RealField):
             elif section_type == ElfSectionType.SHT_SYMTAB:
                 table_size = field.sh_size.value
                 logger.debug('unpacking symbol table')
-                n = int(table_size/SymbolTableEntry().size()) # FIXME: create Dependency w algebraic operation
+                n = int(table_size / SymbolTableEntry(father=self).size())  # FIXME: create Dependency w algebraic operation
                 logger.debug(' with %d entries' % n)
 
                 stream.seek(field.sh_offset.value)
@@ -303,7 +305,7 @@ class RealELFSectionsField(fields.RealField):
                 table_size = field.sh_size.value
 
                 logger.debug('unpacking relocation table')
-                n = int(table_size/ElfRelEntry().size()) # FIXME: create Dependency w algebraic operation
+                n = int(table_size / ElfRelEntry(father=self).size())  # FIXME: create Dependency w algebraic operation
                 logger.debug(' with %d entries' % n)
 
                 stream.seek(field.sh_offset.value)
@@ -327,10 +329,11 @@ class RealELFSegmentsField(fields.RealField):
     TODO: how do entry from this and the corresponding header behave wrt each other?
           if we remove the header, we remove the entry and vice versa?
     '''
+
     def __init__(self, header, *args, **kwargs):
         '''Use the header parameter to get the entries needed'''
         super().__init__(*args, **kwargs)
-        self.header = header # this MUST be a Dependency
+        self.header = header  # this MUST be a Dependency
 
     def init(self):
         pass
@@ -348,7 +351,7 @@ class RealELFSegmentsField(fields.RealField):
             logger.debug('pack()()()')
 
     def unpack(self, stream):
-        self.value = [] # reset the entries
+        self.value = []  # reset the entries
         for field in self.header:
             segment_type = field.p_type.value
             logger.debug('found section type %s' % segment_type)
@@ -369,9 +372,10 @@ class RealELFSegmentsField(fields.RealField):
 
                 self.value.append(section)
 
+
 class ELFSectionsField(fields.Field):
     real = RealELFSectionsField
 
+
 class ELFSegmentsField(fields.Field):
     real = RealELFSegmentsField
-

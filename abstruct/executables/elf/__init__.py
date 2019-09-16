@@ -8,7 +8,8 @@ There are two main aspects of that this format take into consideration
 
 Reference to <http://www.sco.com/developers/devspecs/gabi41.pdf>.
 
-This <https://docs.oracle.com/cd/E19120-01/open.solaris/819-0690/6n33n7fcd/index.html> seems
+
+This <http://www.sco.com/developers/gabi/latest/contents.html> seems
 a more complete reference for the format (take into consideration that exist a general
 reference (linked before) and then each architecture has its own document that address
 specific aspect).

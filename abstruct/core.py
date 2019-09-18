@@ -84,7 +84,7 @@ class Chunk(metaclass=MetaChunk):
 
         for name, field_constructor in self.__class__._meta.fields:
             logger.debug('field \'%s\' initialized' % name)
-            setattr(self, name, field_constructor(self))
+            setattr(self, name, field_constructor(self, name=name))
 
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor

@@ -35,17 +35,18 @@ class Field(object):
     def contribute_to_chunk(self, cls, name):
         cls._meta.fields.append((name, self))
 
-    def __call__(self, father):
+    def __call__(self, father, name=None):
         if not self.real:
             raise AttributeError('property \'real\' is None')
-        return self.real(*self.args, father=father, **self.kwargs)
+        return self.real(*self.args, name=name, father=father, **self.kwargs)
 
 
 class RealField(object):
 
-    def __init__(self, *args, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, **kwargs):
         self._resolve = True  # TODO: create contextmanager
         self._phase = ChunkPhase.INIT
+        self.name = name
         self.father = father
         self.default = default
         self.offset = offset
@@ -67,7 +68,7 @@ class RealField(object):
         '''If the field is a Field then return directly the 'value' attribute'''
         field = super().__getattribute__(name)
         if isinstance(field, Dependency) and self._resolve:
-            logger.debug('trying to resolve dependency for \'%s\'' % name)
+            logger.debug('trying to resolve dependency for \'%s\' from \'%s\'' % (name, self.name))
             return field.resolve(self)
 
         return field

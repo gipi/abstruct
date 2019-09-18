@@ -309,9 +309,9 @@ class FieldsTests(unittest.TestCase):
         dummy.dataB.value = 0x05060708
         dummy.dataC.value = 0x090A0B0C
 
-        dummy.crc.pack()
+        dummy.pack()
 
-        print(dummy.crc)
+        logger.debug(repr(dummy.crc))
 
 
 class ELFTest(unittest.TestCase):

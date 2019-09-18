@@ -295,12 +295,24 @@ class RealELFSectionsField(fields.RealField):
 
                 stream.seek(field.sh_offset.value)
 
-                section = SymbolTable(n=n)
+                section = SymbolTable(n=n, father=self)
                 section.unpack(stream)
 
                 self.value.append(section)
-                print(section)
+            elif section_type == ElfSectionType.SHT_DYNSYM:
+                table_size = field.sh_size.value
+                logger.debug('unpacking dynamic symbol table')
+                n = int(table_size / SymbolTableEntry(father=self).size())  # FIXME: create Dependency w algebraic operation
+                logger.debug(' with %d entries' % n)
+
+                stream.seek(field.sh_offset.value)
+
+                section = SymbolTable(n=n, father=self)
+                section.unpack(stream)
+
+                self.value.append(section)
             elif section_type == ElfSectionType.SHT_REL:
+                from .reloc import RelocationTable
                 from .reloc import ElfRelEntry
                 table_size = field.sh_size.value
 
@@ -310,13 +322,13 @@ class RealELFSectionsField(fields.RealField):
 
                 stream.seek(field.sh_offset.value)
 
-                section = RelocationTable(n=n)
+                section = RelocationTable(n=n, father=self)
                 section.unpack(stream)
 
                 self.value.append(section)
                 print(section)
             else:
-                logger.debug('unpacking unhandled data')
+                logger.debug('unpacking unhandled data of type %s' % section_type)
                 stream.seek(field.sh_offset.value)
                 section = fields.RealStringField(field.sh_size.value)
                 section.unpack(stream)
@@ -350,27 +362,43 @@ class RealELFSegmentsField(fields.RealField):
         for field in self.header:
             logger.debug('pack()()()')
 
+    def _handle_unpack_PT_PHDR(self, entry):
+        '''It handles the header, simply using a StringField'''
+        field = fields.RealStringField(entry.p_filesz.value)
+
+        return field
+
+    def _handle_unpack_PT_INTERP(self, entry):
+        interp = ELFInterpol(offset=entry.p_offset.value, size=entry.p_filesz.value)
+
+        return interp
+
+    def _handle_unpack_undefined(self, entry):
+        field = fields.RealStringField(offset=entry.p_offset.value, size=entry.p_filesz.value)
+
+        return field
+
+    def unpack_segment(self, stream, header):
+            segment_type = header.p_type.value
+
+            logger.debug('found segment type %s' % segment_type)
+            logger.debug('offset: %d size: %d' % (header.p_offset.value, header.p_filesz.value))
+
+            callback_name = '_handle_unpack_%s' % segment_type.name
+            try:
+                callback = getattr(self, callback_name)
+            except:
+                callback = self._handle_unpack_undefined
+
+            field = callback(header)
+            field.unpack(stream)
+
+            self.value.append(field)
+
     def unpack(self, stream):
         self.value = []  # reset the entries
-        for field in self.header:
-            segment_type = field.p_type.value
-            logger.debug('found section type %s' % segment_type)
-            logger.debug('offset: %d size: %d' % (field.p_offset.value, field.p_filesz.value))
-
-            if segment_type == ElfSegmentType.PT_INTERP:
-                interp = ELFInterpol(offset=field.p_offset.value, size=field.p_filesz.value)
-
-                real_offset = field.p_offset
-                interp.unpack(stream)
-                # we don't need to set the field's offset
-                print('>>>', interp.value)
-            else:
-                logger.debug('unpacking unhandled data')
-                stream.seek(field.p_offset.value)
-                section = fields.RealStringField(field.p_filesz.value)
-                section.unpack(stream)
-
-                self.value.append(section)
+        for field_header in self.header:
+            self.unpack_segment(stream, field_header)
 
 
 class ELFSectionsField(fields.Field):

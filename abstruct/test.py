@@ -340,7 +340,7 @@ class ELFTest(unittest.TestCase):
 
     def test_minimal_from_zero(self):
         elf = ElfFile()
-        str_header = SectionHeader()
+        str_header = SectionHeader(father=elf)
         str_header.sh_type.value = ElfSectionType.SHT_STRTAB
         elf.sections.value.append(str_header)
         with open('/tmp/minimal', 'wb') as f:

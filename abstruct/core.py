@@ -12,8 +12,10 @@ logger.setLevel(logging.DEBUG)
 
 
 class Meta(object):
+
     def __init__(self):
         self.fields = []
+
 
 class MetaChunk(type):
 
@@ -174,7 +176,6 @@ class Chunk(metaclass=MetaChunk):
             field_instance = getattr(self, field_name)
             field_instance.relayout()
 
-
     def pack(self, stream=None, relayout=True):
         '''
         This method is a little tricky since we are creating a raw
@@ -208,7 +209,7 @@ class Chunk(metaclass=MetaChunk):
                 field_instance.offset = stream.tell()
                 logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
                 # we call pack() on the subchunks
-                field_instance.pack(stream=stream, relayout=False) # we hope someone triggered the relayout before
+                field_instance.pack(stream=stream, relayout=False)  # we hope someone triggered the relayout before
 
             count += 1
             if count > 5:
@@ -226,7 +227,7 @@ class Chunk(metaclass=MetaChunk):
         forth.
 
         As already told size and offset are the two fundamental parameters that
-        define a chunk inside a binary stream: 
+        define a chunk inside a binary stream:
 
         There are some aspects that have to take in consideration:
 

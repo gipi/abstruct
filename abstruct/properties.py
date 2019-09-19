@@ -92,14 +92,15 @@ class Dependency(object):
 
 
 class RatioDependency(Dependency):
-    def __init__(self,ratio, expression, obj=None):
+
+    def __init__(self, ratio, expression, obj=None):
         super().__init__(expression, obj)
         self._ratio = ratio
 
     def resolve(self, instance):
         value = super().resolve(instance)
 
-        return int(value/self._ratio)
+        return int(value / self._ratio)
 
 
 # NOTE: we need the caller to seek() correctly a given offset
@@ -108,6 +109,7 @@ class RatioDependency(Dependency):
 #       the expression is with respect to the father (probably
 #       to be fixed)
 class Offset(object):
+
     def __init__(self, expression):
         self.expression = expression
 
@@ -117,4 +119,3 @@ class Offset(object):
         sibiling = getattr(obj, other_child)
 
         return getattr(sibiling, field_name).value
-

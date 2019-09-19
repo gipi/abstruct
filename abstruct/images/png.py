@@ -96,10 +96,10 @@ class PNGChunk(Chunk):
      3. IDAT: contains the actual image data (compressed)
      4. IEND: is the terminator chunk
     '''
-    length = fields.StructField('I', little_endian=False) # big endian
+    length = fields.StructField('I', little_endian=False)  # big endian
     type   = fields.StringField(4)
     Data   = fields.SelectField('type', type2field)
-    crc    = crc.CRCField(['type', 'Data'], little_endian=False) # network byte order
+    crc    = crc.CRCField(['type', 'Data'], little_endian=False)  # network byte order
 
     def isCritical(self):
         return chr(self.type.value[0]).isupper()
@@ -107,5 +107,4 @@ class PNGChunk(Chunk):
 
 class PNGFile(Chunk):
     header = fields.PNGHeaderField()
-    chunks = fields.ArrayField(PNGChunk, canary=lambda x:x.type.value == b'IEND')
-
+    chunks = fields.ArrayField(PNGChunk, canary=lambda x: x.type.value == b'IEND')

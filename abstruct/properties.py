@@ -15,16 +15,21 @@ class ChunkPhase(Enum):
 
 
 def get_root_from_chunk(instance):
-    is_root = instance.father is None
+    return get_instance_from_chunk(instance, condition=lambda x: x.father is None)
+
+
+def get_instance_from_chunk(instance, condition):
+    is_root = condition(instance)
     father = instance
 
     while not is_root:
         father = instance.father
 
-        is_root = father.father is None
+        is_root = condition(father)
         instance = father
 
     return father
+
 
 class Dependency(object):
     '''This makes the relation between fields possible.
@@ -37,6 +42,7 @@ class Dependency(object):
     Probably right now is overcomplicated, we want to understand if make sense
     to use __getattribute__ and __setattr__ to resolve automagically.
     '''
+
     def __init__(self, expression, obj=None):
         self.expression = expression
         self.obj = obj
@@ -46,17 +52,23 @@ class Dependency(object):
 
     def resolve_field(self, instance):
         logger.debug('trying to resolve \'%s\'' % self.expression)
-        field = prev_field = None
+        field = None
         # here split the expression into the components
         # like python modules
-        fields_path = self.expression.split('.') # FIXME: create class FieldPath to encapsulate
+        fields_path = self.expression.split('.')  # FIXME: create class FieldPath to encapsulate
 
         if fields_path[0] != '':
             field = get_root_from_chunk(instance)
+            logger.debug('resolve from root: \'%s\'' % field.__class__.__name__)
             for component_name in fields_path:
                 field = getattr(field, component_name)
-        else:
-            raise AttributeError('Dependency with relative expression not yet implemented!')
+        else:  # we have a relative dependency
+            field = instance.father
+            logger.debug('resolve from father: \'%s\'' % field.__class__.__name__)
+            for component_name in fields_path[1:]:
+                field = getattr(field, component_name)
+
+        logger.debug('resolved as field %s' % field.__class__.__name__)
 
         return field
 

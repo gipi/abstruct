@@ -153,7 +153,14 @@ class RealStructField(RealField):
 
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
         self.format = format
+        self.enum = enum
         super().__init__(default=default if not equals_to else equals_to, **kw)
+
+    def __repr__(self):
+        if not self.enum:
+            return '<%s(0x%x)>' % (self.__class__.__name__, self.value)
+
+        return f'<{self.__class__.__name__}({self.value!r})'
 
     def get_format(self):
         return '%s%s' % ('<' if self.little_endian else '>', self.format)
@@ -167,7 +174,8 @@ class RealStructField(RealField):
 
     def pack(self, stream=None, relayout=True):
         self._update_value()
-        packed_value = struct.pack(self.get_format(), self.value)
+        packed_value = struct.pack(self.get_format(), self.value if not self.enum else self.value.value)
+        self._data = packed_value
 
         stream = stream if stream else Stream(b'')
 
@@ -180,6 +188,9 @@ class RealStructField(RealField):
     def unpack(self, stream):
         self._data = stream.read(self.size())
         self.value = struct.unpack(self.get_format(), self._data)[0]
+
+        if self.enum:
+            self.value = self.enum(self.value)
 
 
 class StructField(Field):

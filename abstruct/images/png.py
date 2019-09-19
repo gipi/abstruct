@@ -6,7 +6,7 @@ Format created to replace patent-emcumbered GIF files.
 The specification is at <http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html>.
 
 '''
-from enum import Flag
+from enum import Enum
 
 from abstruct.core import Chunk
 from abstruct import (
@@ -16,11 +16,27 @@ from abstruct.properties import Dependency, RatioDependency
 from abstruct.common import crc
 
 
-class PNGColorType(Flag):
+class PNGColorType(Enum):
+    '''The color type definition of the PNG is a little tricky and doesn't seem
+    to follow a bit-mask. We are going to list all the valid cases.'''
     GRAYSCALE = 0x00
-    PALETTE   = 0x01
     RGB       = 0x02
-    ALPHA     = 0x04
+    RGB_PALETTE = 0x03
+    GS_ALPHA    = 0x04
+    RGBA        = 0x06
+
+
+class PNGCompressionType(Enum):
+    '''There is only one method of compression'''
+    DEFLATE = 0x00
+
+
+class PNGFilterType(Enum):
+    NONE = 0x00
+    SUB  = 0x01
+    UP   = 0x02
+    AVG  = 0x03
+    PAETH = 0x04
 
 
 class IHDRData(Chunk):
@@ -31,24 +47,24 @@ class IHDRData(Chunk):
     '''
     width       = fields.StructField('I', little_endian=False)
     height      = fields.StructField('I', little_endian=False)
-    depth       = fields.StructField('b')
-    color       = fields.StructField('b', enum=PNGColorType, default=PNGColorType.GRAYSCALE)
-    compression = fields.StructField('b')
-    filter      = fields.StructField('b')
-    interlace   = fields.StructField('b')
+    depth       = fields.StructField('B')
+    color       = fields.StructField('B', enum=PNGColorType, default=PNGColorType.GRAYSCALE)
+    compression = fields.StructField('B', enum=PNGCompressionType, default=PNGCompressionType.DEFLATE)
+    filter      = fields.StructField('B', enum=PNGFilterType, default=PNGFilterType.NONE)
+    interlace   = fields.StructField('B')
 
     def __str__(self):
         return '%dx%dx%d' % (
             self.width.value,
             self.height.value,
-            ord(self.depth.value),
+            self.depth.value,
         )
 
 
 class PLTEEntry(Chunk):
-    red   = fields.StructField('c')
-    green = fields.StructField('c')
-    blue  = fields.StructField('c')
+    red   = fields.StructField('B')
+    green = fields.StructField('B')
+    blue  = fields.StructField('B')
 
 
 class PNGHeader(Chunk):
@@ -57,9 +73,9 @@ class PNGHeader(Chunk):
 
 type2field = {
     b'IHDR': IHDRData(),
-    b'PLTE': fields.RealArrayField(PLTEEntry, n=RatioDependency(3, 'length')),
-    b'gAMA': fields.RealStringField(Dependency('length')),
-    fields.RealSelectField.Type.DEFAULT: fields.RealStringField(Dependency('length')),
+    b'PLTE': fields.RealArrayField(PLTEEntry, n=RatioDependency(3, '.length')),
+    b'gAMA': fields.RealStringField(Dependency('.length')),
+    fields.RealSelectField.Type.DEFAULT: fields.RealStringField(Dependency('.length')),
 }
 
 

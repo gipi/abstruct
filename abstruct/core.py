@@ -102,9 +102,13 @@ class Chunk(metaclass=MetaChunk):
             # dependencies are indexed by the src field name
             cls._dependencies[child_name] = dep
 
+    def get_fields(self):
+        '''It returns a list of couples (name, instance) for each field.'''
+        return self._meta.fields
+
     def __repr__(self):
         msg = []
-        for field_name, _ in self._meta.fields:
+        for field_name, _ in self.get_fields():
             field = getattr(self, field_name)
             msg.append('%s=%s' % (field_name, field))
         return '<%s(%s)>' % (self.__class__.__name__, ','.join(msg))
@@ -154,7 +158,7 @@ class Chunk(metaclass=MetaChunk):
     @property
     def data(self):
         value = b''
-        for field_name, _ in self._meta.fields:
+        for field_name, _ in self.get_fields():
             field = getattr(self, field_name)
             value += field.data
 
@@ -164,7 +168,7 @@ class Chunk(metaclass=MetaChunk):
         '''This method triggers the chunk and its children to reset the offsets
         and the phase in order to pack correctly'''
         self.offset = None
-        for field_name, _ in self._meta.fields:
+        for field_name, _ in self.get_fields():
             logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
@@ -190,7 +194,7 @@ class Chunk(metaclass=MetaChunk):
         count = 0
         while self.phase != ChunkPhase.DONE:
             logger.debug('trying packing #%d' % count)
-            for field_name, _ in self._meta.fields:
+            for field_name, _ in self.get_fields():
                 logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
                 field_instance = getattr(self, field_name)
@@ -229,7 +233,7 @@ class Chunk(metaclass=MetaChunk):
             1. you can have size and offset dependencies
             2. you can enforce dependencies or not
         '''
-        for field_name, _ in self._meta.fields:
+        for field_name, _ in self.get_fields():
             logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
 

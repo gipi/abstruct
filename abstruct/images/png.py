@@ -6,6 +6,8 @@ Format created to replace patent-emcumbered GIF files.
 The specification is at <http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html>.
 
 '''
+from enum import Flag
+
 from abstruct.core import Chunk
 from abstruct import (
     fields,
@@ -14,14 +16,26 @@ from abstruct.properties import Dependency, RatioDependency
 from abstruct.common import crc
 
 
+class PNGColorType(Flag):
+    GRAYSCALE = 0x00
+    PALETTE   = 0x01
+    RGB       = 0x02
+    ALPHA     = 0x04
+
+
 class IHDRData(Chunk):
-    width = fields.StructField('I', little_endian=False)
-    height = fields.StructField('I', little_endian=False)
-    depth = fields.StructField('c')
-    color = fields.StructField('c')
-    compression = fields.StructField('c')
-    filter = fields.StructField('c')
-    interlace = fields.StructField('c')
+    '''
+    Width and height give the image dimensions in pixels.
+    Bit depth is a single-byte integer giving the number of bits per sample or per palette index (not per pixel).
+    Color type is a single-byte integer that describes the interpretation of the image data.
+    '''
+    width       = fields.StructField('I', little_endian=False)
+    height      = fields.StructField('I', little_endian=False)
+    depth       = fields.StructField('b')
+    color       = fields.StructField('b', enum=PNGColorType, default=PNGColorType.GRAYSCALE)
+    compression = fields.StructField('b')
+    filter      = fields.StructField('b')
+    interlace   = fields.StructField('b')
 
     def __str__(self):
         return '%dx%dx%d' % (

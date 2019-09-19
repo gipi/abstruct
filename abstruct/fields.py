@@ -85,7 +85,7 @@ class RealField(object):
             field = super().__getattribute__(name)
             self.__dict__['_resolve'] = True
             if isinstance(field, Dependency):
-                logger.debug('set for field \'%s\' the value \'%d\'depends on' % (name, value))
+                logger.debug('set for field \'%s\' the value \'%s\'depends on' % (name, value))
                 real_field = field.resolve_field(self)
                 real_field.value = value
                 return
@@ -414,15 +414,15 @@ class RealSelectField(RealField):
 
         key = field_key.value if field_key.value in self._mapping else RealSelectField.Type.DEFAULT
 
-        logger.debug('resolved key to \'%s\' (original was \'%s\')' % (key, field_key.value))
+        logger.debug('using key to \'%s\' (original was \'%s\')' % (key, field_key.value))
 
         field_class, args, kwargs = self._mapping[key]
         self._field = field_class(*args, **kwargs)
         self._field.father = self.father  # FIXME
-        logger.debug('found field %s' % repr(self._field))
+        logger.debug(f'unpacking {self._field!r}')
 
         self._field.unpack(stream)
-        logger.debug('unpacked %s' % self._field)
+        logger.debug(f'unpacked {self._field!r}')
 
 
 class SelectField(Field):

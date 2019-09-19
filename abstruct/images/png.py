@@ -3,7 +3,9 @@
 
 Format created to replace patent-emcumbered GIF files.
 
-The specification is at <http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html>.
+The specification is at <http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html> and
+is available a full test-suite with a lot of PNG images covering all
+the possible cases at <http://www.schaik.com/pngsuite/>.
 
 '''
 from enum import Enum
@@ -32,6 +34,11 @@ class PNGCompressionType(Enum):
 
 
 class PNGFilterType(Enum):
+    '''This indicates the preprocessing method applied to the image data before compression. At present, only filter method 0 is defined'''
+    ADAPTIVE = 0x00
+
+
+class PNGFilterAdaptiveType(Enum):
     NONE = 0x00
     SUB  = 0x01
     UP   = 0x02
@@ -50,7 +57,7 @@ class IHDRData(Chunk):
     depth       = fields.StructField('B')
     color       = fields.StructField('B', enum=PNGColorType, default=PNGColorType.GRAYSCALE)
     compression = fields.StructField('B', enum=PNGCompressionType, default=PNGCompressionType.DEFLATE)
-    filter      = fields.StructField('B', enum=PNGFilterType, default=PNGFilterType.NONE)
+    filter      = fields.StructField('B', enum=PNGFilterType, default=PNGFilterType.ADAPTIVE)
     interlace   = fields.StructField('B')
 
     def __str__(self):
@@ -66,16 +73,34 @@ class PLTEEntry(Chunk):
     green = fields.StructField('B')
     blue  = fields.StructField('B')
 
+    @property
+    def pixel(self):
+        return (self.red.value, self.green.value, self.blue.value)
+
 
 class PNGHeader(Chunk):
     magic = fields.StringField(8, default=b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a')
 
 
+class RealPNGIDAT(fields.RealStringField):
+    '''In a PNG file, the concatenation of the contents of all the IDAT chunks makes up a zlib datastream,
+    the boundaries between IDAT chunks are arbitrary and can fall anywhere in the zlib datastream.
+    '''
+
+    def _get_value(self):
+        if not self._value:
+            return b''
+        import zlib
+
+        return zlib.decompress(self._value)
+
+
 type2field = {
-    b'IHDR': IHDRData(),
-    b'PLTE': fields.RealArrayField(PLTEEntry, n=RatioDependency(3, '.length')),
-    b'gAMA': fields.RealStringField(Dependency('.length')),
-    fields.RealSelectField.Type.DEFAULT: fields.RealStringField(Dependency('.length')),
+    b'IHDR': (IHDRData, (), {}),
+    b'PLTE': (fields.RealArrayField, (PLTEEntry,), {'n': RatioDependency(3, '.length')}),
+    b'IDAT': (RealPNGIDAT, (Dependency('.length'),), {}),
+    b'gAMA': (fields.RealStringField, (Dependency('.length'),), {}),
+    fields.RealSelectField.Type.DEFAULT: (fields.RealStringField, (Dependency('.length'),), {}),
 }
 
 

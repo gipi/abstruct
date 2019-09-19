@@ -371,8 +371,8 @@ class RealSelectField(RealField):
             SECOND = 1
 
         type2field = {
-            DummyType.FIRST: fields.StructField('I'),
-            DummyType.SECOND: fields.StringField(0x10)
+            DummyType.FIRST: (fields.StructField, ('I',), {},),
+            DummyType.SECOND: (fields.StringField, (0x10,), {}),
         }
 
         class DummyChunk(Chunk):
@@ -405,7 +405,8 @@ class RealSelectField(RealField):
 
         logger.debug('resolved key to \'%s\' (original was \'%s\')' % (key, field_key.value))
 
-        self._field = self._mapping[key]
+        field_class, args, kwargs = self._mapping[key]
+        self._field = field_class(*args, **kwargs)
         self._field.father = self.father  # FIXME
         logger.debug('found field %s' % repr(self._field))
 

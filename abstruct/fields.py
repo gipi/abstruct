@@ -163,6 +163,11 @@ class RealStructField(RealField):
 
         return f'<{self.__class__.__name__}({self.value!r})'
 
+    def __str__(self):
+        width = self.size() * 2  # we want to be as large as possible
+        formatter = '0x%%0%dx' % width
+        return formatter % (self.value if not self.enum else self.value.value,)
+
     def get_format(self):
         return '%s%s' % ('<' if self.little_endian else '>', self.format)
 
@@ -221,6 +226,9 @@ class RealStringField(RealField):
     def __init__(self, n=0, **kw):
         super().__init__(**kw)
         self.n = n
+
+    def __repr__(self):
+        return '<%s(%s)>' % (self.__class__.__name__, repr(self.value))
 
     def init(self):
         self.default = b'\x00' * self.n if not self.default else self.default
@@ -288,6 +296,9 @@ class RealArrayField(RealField):
                 kw['default'] = [self.field_cls()] * self.n
 
         super().__init__(**kw)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}({self.value!r})>'
 
     def __len__(self):
         return len(self.value)
@@ -398,6 +409,9 @@ class RealSelectField(RealField):
         super().__init__(*args, **kwargs)
         self._key = key
         self._mapping = mapping
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}{self._field!r}>'
 
     def init(self):
         pass

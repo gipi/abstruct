@@ -27,7 +27,6 @@ from .enum import (
     ElfSegmentFlag,
 )
 from ... import fields
-from ...properties import Offset
 
 
 class ElfHeader(Chunk):

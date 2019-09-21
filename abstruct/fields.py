@@ -175,7 +175,7 @@ class RealStructField(RealField):
         return struct.calcsize(self.get_format())
 
     @property
-    def data(self):
+    def raw(self):
         return self._data
 
     def pack(self, stream=None, relayout=True):
@@ -224,7 +224,7 @@ class RealStringField(RealField):
         return self.n
 
     @property
-    def data(self):
+    def raw(self):
         return self.value
 
     def pack(self, stream=None, relayout=True):
@@ -290,10 +290,10 @@ class RealArrayField(RealField):
         return self.n
 
     @property
-    def data(self):
+    def raw(self):
         value = b''
         for element in self.value:
-            value += element.data
+            value += element.raw
 
         return value
 
@@ -403,8 +403,8 @@ class RealSelectField(RealField):
         return self._field.value
 
     @property
-    def data(self):
-        return self._field.data
+    def raw(self):
+        return self._field.raw
 
     def unpack(self, stream):
         logger.debug('resolving key \'%s\'' % self._key)

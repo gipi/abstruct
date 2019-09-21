@@ -162,11 +162,11 @@ class Chunk(metaclass=MetaChunk):
         return size
 
     @property
-    def data(self):
+    def raw(self):
         value = b''
         for field_name, _ in self.get_fields():
             field = getattr(self, field_name)
-            value += field.data
+            value += field.raw
 
         return value
 

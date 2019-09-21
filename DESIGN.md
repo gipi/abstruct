@@ -135,7 +135,7 @@ cannot know where he is (a part of dependencies)
 It indicates the high level representation for the data, for now it is
 present only in a field.
 
-### ``data`` (change to ``raw``)
+### ``raw``
 
 This attribute returns the raw data bytes of a chunk.
 

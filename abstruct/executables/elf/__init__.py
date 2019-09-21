@@ -32,9 +32,9 @@ from ...properties import Offset
 
 class ElfHeader(Chunk):
     e_ident     = fields.ElfIdentField()
-    e_type      = fields.StructField('H', enum=ElfType, default=ElfType.ET_EXEC)
-    e_machine   = fields.StructField('H', enum=ElfMachine, default=ElfMachine.EM_386)
-    e_version   = fields.StructField('I', enum=ElfVersion, default=ElfVersion.EV_CURRENT)
+    e_type      = elf_fields.Elf_Half(enum=ElfType, default=ElfType.ET_EXEC)
+    e_machine   = elf_fields.Elf_Half(enum=ElfMachine, default=ElfMachine.EM_386)
+    e_version   = elf_fields.Elf_Word(enum=ElfVersion, default=ElfVersion.EV_CURRENT)
     e_entry     = elf_fields.Elf_Addr()
     e_phoff     = elf_fields.Elf_Off()
     e_shoff     = elf_fields.Elf_Off()

@@ -256,8 +256,8 @@ class FieldsTests(unittest.TestCase):
             SECOND = 1
 
         type2field = {
-            DummyType.FIRST: fields.RealStructField('I'),
-            DummyType.SECOND: fields.RealStringField(0x10)
+            DummyType.FIRST: (fields.RealStructField, ('I', ), {}),
+            DummyType.SECOND: (fields.RealStringField, (0x10, ), {}),
         }
 
         class DummyChunk(Chunk):

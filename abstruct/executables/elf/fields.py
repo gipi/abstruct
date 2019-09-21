@@ -232,6 +232,35 @@ class SymbolInfoField(fields.StructField):
 
 
 class SymbolTableEntry(Chunk):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._elf_class = Dependency('elf_header.e_ident.EI_CLASS')
+
+    def get_fields(self):  # TODO: factorize this code in more pythonic way
+        original_fields = super().get_fields()
+        # FIXME: here we need to call resolve() by ourself since it's not a field
+        if self._elf_class.resolve(self) == ElfEIClass.ELFCLASS32:
+            return original_fields
+
+        ORDERING_64 = [
+            'st_name',
+            'st_info',
+            'st_other',
+            'st_shndx',
+            'st_value',
+            'st_size',
+        ]
+        modified_fields = []
+        # FIXME: this is shit
+        for name in ORDERING_64:
+            for _ in original_fields:
+                if _[0] == name:
+                    modified_fields.append(_)
+                    break
+
+        return modified_fields
+
     st_name  = Elf_Word()
     st_value = Elf_Addr()
     st_size  = Elf_Xword()

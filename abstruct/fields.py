@@ -343,7 +343,7 @@ class RealArrayField(RealField):
         self.value = []  # reset the fields already present
         real_n = self.n if self.n is not None else 100  # FIXME
         for idx in range(real_n):
-            element = self.field_cls()
+            element = self.field_cls(father=self)  # pass the father so that we don't lose the hierarchy
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
 
             element_offset = stream.tell()

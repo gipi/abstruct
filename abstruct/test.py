@@ -261,7 +261,7 @@ class FieldsTests(unittest.TestCase):
         }
 
         class DummyChunk(Chunk):
-            type = fields.BitField(DummyType, 'I')
+            type = fields.StructField('I', enum=DummyType)
             data = fields.SelectField('type', type2field)
 
         dummy = DummyChunk()

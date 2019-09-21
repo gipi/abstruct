@@ -57,15 +57,14 @@ class ZIPCompressionMethod(Flag):
 class ZIPHeader(Chunk):
     signature         = fields.StringField(0x4, default=b'PK\x03\x04')
     version           = fields.StructField('H')
-    flags             = fields.BitField(ZIPFlags, 'H')
-    compression       = fields.BitField(ZIPCompressionMethod, 'H')
-    modification_time = fields.StructField('H') # TODO: MS DOS field
+    flags             = fields.StructField('H', enum=ZIPFlags)
+    compression       = fields.StructField('H', enum=ZIPCompressionMethod)
+    modification_time = fields.StructField('H')  # TODO: MS DOS field
     modification_date = fields.StructField('H')
-    crc32             = fields.StructField('I') # TODO: CRC32 depending on data from file content
+    crc32             = fields.StructField('I')  # TODO: CRC32 depending on data from file content
     compressed_size   = fields.StructField('I')
     uncompressed_size = fields.StructField('I')
     filename_length   = fields.StructField('H')
     extra_length      = fields.StructField('H')
     filename          = fields.StringField(Dependency('filename_length'))
     extra_field       = fields.StringField(Dependency('extra_length'))
-

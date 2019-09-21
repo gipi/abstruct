@@ -15,7 +15,9 @@ the terminology is borrowed from the ``struct`` module.
 
 Roughly speaking a file format is composed of several **chunks** of bytes: i.e.
 a **countigous** stream of bytes identified by two particular attributes, the **offset**
-and the **size**. When a chunk is directly representable as a byte-like value
+and the **size**.
+
+TO BE DESIGNED BETTER: When a chunk is directly representable as a byte-like value
 is it a field.
 
 It's very important that we set a chunk to be "without holes" in order to be
@@ -29,6 +31,9 @@ think at the ``ELF`` format that indicates in the entries of the section header 
 for the data for a given segment (and also the type of section). This is particular
 important when the attributes are size or the offset that tightly connected
 to the pack()/unpacking() routines.
+
+**we have two kind of dependencies: between values and between layout**: implicitely
+there is always a dependency between sibling chunk at the same level.
 
 A problems arises when we have attributes that depend on other attributes, like a
 field that determines the size of the following field in the format description:
@@ -45,7 +50,7 @@ class FormatA(Chunk):
     subchunk = fields.SubChunkField()
 ```
 
-in the unpacking we need to have unpacked the ``subchunk`` chunk before we can determine
+in the packing we need to have packed the ``subchunk`` chunk before we can determine
 the size to put into the ``subchunk_size`` field.
 
 **N.B.:** here we can see that the dependency is one-way since it's a little tricky
@@ -55,15 +60,18 @@ Moreover from a single field can depend more than one field (for example the fie
 ``EI_DATA`` in the ``ELF`` header determines the endianess of the file format for the
 given ``ELF`` file).
 
+A Chunk should not have any state necessary: any instance can be recovered only by its
+raw value.
+
 ## Dependencies
 
-Field subclasses automagically resolve attributes set to Dependency
+Field subclasses automagically resolve attributes set to Dependency.
+
+Since the fields are not static but can change in any way, the dependency
+**MUST** be resolved at runtime using internally the API by the method ``resolve()``.
 
 BTW there are fields that have dependencies that should be updated also in
 inverse
-
-Probably the best solution is to use a Meta class with dependency
-explicitely set that passes that to the fields of interest
 
 For example, the ``ELF`` format has an header that indicates in the
 field named ``e_shoff`` at what offset the section header table is;
@@ -102,20 +110,32 @@ If not indicated explicitely the chunk knows internally its own size
 
 ### ``offset``
 
-It indicates the offset from the main container of the chunk.
+It is what it seems: the position in the stream of the chunk;
+obviously it is not so easy because some formats use the value
+inside a field to indicate it. Moreover we want the definition
+to be as generic as possible.
+
+This means that the this attribute must be a ``Dependency`` subclass
+having at least two internal parameter
+
+ - ``origin``: from where to start to calculate the offset
+ - ``offset``: the "distance" from the origin
+
+We need a field for offset dependency: ``OffsetField()``
+
 It is used by the parent during the unpack/pack process to
 seek the stream to the actual position, but the field/chunk itself
 it's not involved with the seeking.
 
-TBD: probably is most useful to take the offset from the direct
-parent!
+The offset should be managed by a parent, since the element itself
+cannot know where he is (a part of dependencies)
 
 ### ``value``
 
 It indicates the high level representation for the data, for now it is
 present only in a field.
 
-### ``data``
+### ``data`` (change to ``raw``)
 
 This attribute returns the raw data bytes of a chunk.
 

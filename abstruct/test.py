@@ -1,22 +1,23 @@
 import logging
 import os
-import shutil
 import subprocess
-import tempfile
 import unittest
-from enum import Flag
+from enum import Flag, Enum
 
 
 from .executables.elf import (
     ElfFile,
-    ElfType,
-    ElfMachine,
-    ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType,
     SectionHeader,
     elf_fields,
 )
+from .executables.elf.enum import (
+    ElfType,
+    ElfMachine,
+    ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType,
+)
 
 from .images.png import (
+    PNGColorType,
     PNGHeader,
     PNGFile,
     IHDRData,
@@ -45,7 +46,9 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class StreamTests(unittest.TestCase):
+
     def test_bytes_stream_read_all(self):
         data = b'\x01\x02\x03\x04\x05'
 
@@ -69,7 +72,9 @@ class StreamTests(unittest.TestCase):
         self.assertEqual(stream.read_all(), b'\x03\x04\x05')
         self.assertEqual(stream.tell(), 5)
 
+
 class CoreTests(unittest.TestCase):
+
     def test_meta(self):
         class Dummy(Chunk):
             field = fields.StructField('i')
@@ -134,7 +139,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(tlv.type.offset, 0x00)
         self.assertEqual(tlv.length.value, 0x0f)
         self.assertEqual(tlv.length.offset, 0x04)
-        self.assertEqual(tlv.data.value, b'\x41'*0x0f)
+        self.assertEqual(tlv.data.value, b'\x41' * 0x0f)
         self.assertEqual(tlv.data.offset, 0x04 + 0x04)
         self.assertEqual(tlv.extra.value, 0x0d0c0b0a)
         self.assertEqual(tlv.extra.offset, 0x04 + 0x04 + 0x0f)
@@ -143,17 +148,16 @@ class CoreTests(unittest.TestCase):
         # the offset for extra is recalculated and the size field
         # also is updated accordingly
         tlv.data.value = b'\x42\x42\x42'
-        tlv.relayout() # we must trigger relayouting
+        tlv.relayout()  # we must trigger relayouting
         tlv.pack()
         self.assertEqual(tlv.type.value, 0x01)
         self.assertEqual(tlv.type.offset, 0x00)
         self.assertEqual(tlv.length.value, 0x03)
         self.assertEqual(tlv.length.offset, 0x04)
-        self.assertEqual(tlv.data.value, b'\x42'*0x03)
+        self.assertEqual(tlv.data.value, b'\x42' * 0x03)
         self.assertEqual(tlv.data.offset, 0x04 + 0x04)
         self.assertEqual(tlv.extra.value, 0x0d0c0b0a)
         self.assertEqual(tlv.extra.offset, 0x04 + 0x04 + 0x03)
-
 
     def test_enum(self):
         self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
@@ -182,7 +186,7 @@ class CoreTests(unittest.TestCase):
         dummy = Dummy()
 
         # try to insert some values an then packing
-        dummy.data.value = b'\x41'*0x10
+        dummy.data.value = b'\x41' * 0x10
         packed_contents = dummy.pack()
 
         # i'm expecting to see the AAAAs starting at offset 4
@@ -194,7 +198,7 @@ class CoreTests(unittest.TestCase):
         # try to insert some values an then packing
         dummy.off.value = 0x0a
 
-        #dummy.data.offset = 0x0a
+        # dummy.data.offset = 0x0a
         packed_contents = dummy.pack()
 
         # i'm expecting to see the AAAAs starting at offset 4
@@ -216,6 +220,7 @@ class CoreTests(unittest.TestCase):
 
 
 class PaddingFieldTests(unittest.TestCase):
+
     def test_is_ok(self):
         class Padda(Chunk):
             padding = fields.PaddingField()
@@ -226,7 +231,9 @@ class PaddingFieldTests(unittest.TestCase):
 
         self.assertEqual(padda.padding.value, contents)
 
+
 class FieldsTests(unittest.TestCase):
+
     def test_struct(self):
         class DummyFile(Chunk):
             field_wo_default = fields.StructField('I')
@@ -235,6 +242,10 @@ class FieldsTests(unittest.TestCase):
         df = DummyFile()
         self.assertEqual(df.field_wo_default.value, 0)
         self.assertEqual(df.field_w_default.value, 0xdead)
+
+    def test_bitfield(self):
+        class WhateverEnum(Enum):
+            pass
 
     def test_array(self):
         class DummyChunk(Chunk):
@@ -300,9 +311,9 @@ class FieldsTests(unittest.TestCase):
             dataC = fields.StructField('I')
 
             crc   = CRCField([
-                    'dataA',
-                    'dataC',
-                ], formatter='0x%08x')
+                'dataA',
+                'dataC',
+            ], formatter='0x%08x')
 
         dummy = DummyChunk()
         dummy.dataA.value = 0x01020304
@@ -315,6 +326,7 @@ class FieldsTests(unittest.TestCase):
 
 
 class ELFTest(unittest.TestCase):
+
     def test_string_table(self):
         table = b'\x00ABCD\x00EFGH\x00'
         string_table = elf_fields.RealSectionStringTable(size=len(table))
@@ -364,9 +376,8 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_ident.EI_CLASS.value, ElfEIClass.ELFCLASS32)
         self.assertEqual(elf.elf_header.e_ident.EI_DATA.value, ElfEIData.ELFDATA2LSB)
 
-
-        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN) # WHY IS COMPILED AS DYN? ALIENS!
         self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386)
+        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN)  # WHY IS COMPILED AS DYN? ALIENS!
 
         # sections
         SECTIONS_NUMBER = 30
@@ -383,7 +394,7 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.elf_header.e_phentsize.value, 32)
         self.assertEqual(elf.elf_header.e_phnum.value, 9)
         self.assertEqual(len(elf.programs), 9)
-        self.assertEqual( # we remove the last three elements since have not well defined type
+        self.assertEqual(  # we remove the last three elements since have not well defined type
             [_.p_type.value for _ in elf.programs.value[:-3]],
             [_ for _ in [
                 ElfSegmentType.PT_PHDR,
@@ -429,16 +440,26 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.section_names[14], '.text')
         self.assertEqual(len(elf.symbol_names), 33)
         self.assertEqual(elf.symbols['main'].st_shndx.value, 14)
+        print(elf.symbols)
+
+        print(elf.dyn_symbols)
+
+        print(elf.sections.value[14])
         from .executables.elf.code import disasm, CS_MODE_32, CS_ARCH_X86
         dot_text_starting_offset = elf.sections.value[14].sh_addr.value
-        print('\n'.join(["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str) for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
-        self.assertEqual(type(elf.get_section_by_name('.strtab')), '')
+        print('\n'.join(
+            ["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str)
+                for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
+        self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.RealSectionStringTable()))
 
         # check if the string table is dumped correctly
-        print(elf.sections.value[elf.elf_header.e_shstrndx.value].pack())
+        index_section_string_table = elf.elf_header.e_shstrndx.value
+        section_string_table = elf.sections.value[index_section_string_table]
+        print(section_string_table.pack())
 
 
 class STK500Tests(unittest.TestCase):
+
     def test_single(self):
         stk500_packet = b'\x1b\x04\x00\x05\x0e\x01\x02\x03\x04\x05\xff'
 
@@ -459,7 +480,9 @@ class STK500Tests(unittest.TestCase):
         self.assertEqual(message.signature_length.value, 8)
         self.assertEqual(message.signature.value, b"AVRISP_2")
 
+
 class PNGTests(unittest.TestCase):
+
     def test_header(self):
         png_header = PNGHeader()
 
@@ -470,15 +493,18 @@ class PNGTests(unittest.TestCase):
 
         png = PNGFile(path_png)
 
+        self.assertEqual(png.chunks.value[0].type.value, b'IHDR')
+        self.assertEqual(png.chunks.value[0].Data._field.color.value, PNGColorType.RGB_PALETTE)
+
         for idx, chunk in enumerate(png.chunks.value):
             print(idx, chunk, chunk.isCritical(), chunk.crc.calculate())
 
 
 class ZIPTests(unittest.TestCase):
+
     def test_minimal(self):
         path_minimal = os.path.join(os.path.dirname(__file__), '..', 'extra', 'minimal.zip')
 
         zp = ZIPHeader(path_minimal)
 
         print(zp)
-

@@ -91,6 +91,7 @@ class Chunk(metaclass=MetaChunk):
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
         if self.stream:
+            logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
             self.unpack(self.stream)
         else:
             for name, _ in self.__class__._meta.fields:
@@ -112,14 +113,14 @@ class Chunk(metaclass=MetaChunk):
         msg = []
         for field_name, _ in self.get_fields():
             field = getattr(self, field_name)
-            msg.append('%s=%s' % (field_name, field))
+            msg.append('%s=%s' % (field_name, repr(field)))
         return '<%s(%s)>' % (self.__class__.__name__, ','.join(msg))
 
     def __str__(self):
         msg = ''
         for field_name, _ in self._meta.fields:
             field = getattr(self, field_name)
-            msg += '%s: %s\n' % (field_name, field)
+            msg += '%s: %s\n' % (field_name, repr(field))
         return msg
 
     def init(self):
@@ -249,5 +250,3 @@ class Chunk(metaclass=MetaChunk):
 
             field.unpack(stream)
             field.offset = offset
-
-

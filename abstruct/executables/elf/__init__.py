@@ -126,6 +126,10 @@ class ElfFile(Chunk):
         return self.get_section_by_name('.strtab')
 
     @property
+    def dynamic_symbol_names_table(self):
+        return self.get_section_by_name('.dynstr')
+
+    @property
     def section_names(self):
         string_table = self.section_names_table
         sections_names = [string_table.get(_.sh_name.value) for _ in self.sections.value]
@@ -143,6 +147,10 @@ class ElfFile(Chunk):
         return self.symbol_names_table.value
 
     @property
+    def dynamic_symbol_names(self):
+        return self.dynamic_symbol_names_table.value
+
+    @property
     def symbols(self):
         symbols_table = self.get_section_by_name('.symtab')
 
@@ -150,3 +158,10 @@ class ElfFile(Chunk):
 
         return {symbols_table_names.get(_.st_name.value): _ for _ in symbols_table.value}
 
+    @property
+    def dyn_symbols(self):
+        dyn_symbols_table = self.get_section_by_name('.dynsym')
+
+        dyn_symbols_table_names = self.dynamic_symbol_names_table
+
+        return {dyn_symbols_table_names.get(_.st_name.value): _ for _ in dyn_symbols_table.value}

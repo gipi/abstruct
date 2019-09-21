@@ -65,6 +65,41 @@ class SectionHeader(Chunk):
 
 
 class ProgramHeader(Chunk):
+    '''This entity represent runtime information of the executable.
+
+    Note: the field "p_flags"'s position depends on the ELF class.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._elf_class = Dependency('elf_header.e_ident.EI_CLASS')
+
+    def get_fields(self):
+        original_fields = super().get_fields()
+        # FIXME: here we need to call resolve() by ourself since it's not a field
+        if self._elf_class.resolve(self) == ElfEIClass.ELFCLASS32:
+            return original_fields
+
+        ORDERING_64 = [
+            'p_type',
+            'p_flags',
+            'p_offset',
+            'p_vaddr',
+            'p_paddr',
+            'p_filesz',
+            'p_memsz',
+            'p_align',
+        ]
+        modified_fields = []
+        # FIXME: this is shit
+        for name in ORDERING_64:
+            for _ in original_fields:
+                if _[0] == name:
+                    modified_fields.append(_)
+                    break
+
+        return modified_fields
+
     p_type   = elf_fields.Elf_Word(enum=ElfSegmentType, default=ElfSegmentType.PT_NULL)
     p_offset = elf_fields.Elf_Off()
     p_vaddr  = elf_fields.Elf_Addr()

@@ -24,9 +24,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-# FIXME: the endianess depens on EI_DATA
-
-
 class ElfIdent(Chunk):
     EI_MAG0 = fields.StructField('c', default=b'\x7f')
     EI_MAG1 = fields.StructField('c', default=b'E')

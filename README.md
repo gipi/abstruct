@@ -13,21 +13,21 @@ the way Django models work).
 This because I need a module ables to not only to read but also to modify and to write
 ``ELF`` files and it seems that there are not module for this.
 
-The API will be change very heavily in future. It uses python3.
+The API will be change very heavily in future, I'm in the design phase. It uses python3.
 
 ## Roadmap
 
  - [ ] add common file formats
    - [ ] PNG
-     - [ ] IHDR
-     - [ ] PLTE
-     - [ ] IDAT
+     - [x] IHDR
+     - [x] PLTE
+     - [x] IDAT
    - [ ] JPEG
    - [ ] ZIP
    - [ ] PDF
    - [ ] ELF
-     - [ ] use endianess indicated in ``header.e_ident.EI_DATA`` for all the fields
-     - [ ] use word size indicated by ``header.e_ident.EI_CLASS`` for the fields involved
+     - [x] use endianess indicated in ``header.e_ident.EI_DATA`` for all the fields
+     - [x] use word size indicated by ``header.e_ident.EI_CLASS`` for the fields involved
      - [x] read ``ELF`` header
      - [x] read ``ELF`` sections header
      - [ ] read ``ELF`` sections data
@@ -46,29 +46,53 @@ The API will be change very heavily in future. It uses python3.
 
 ## Example
 
-This below is an example for 32 bits ``ELF`` header.
+This below is an example for an ``ELF`` header
 
 ```python
 from abstruct.core import Chunk
-from abstruct.fields import StringField, StructField
+from abstruct import fields
+from abstruct.executables.elf import fields as elf_fields
+from abstruct.executables.elf.enum import (
+    ElfEIClass,
+    ElfEIData,
+    ElfOsABI,
+    ElfType,
+    ElfMachine,
+    ElfVersion,
+)
 
-class Elf32Header(Chunk):
-    e_ident     = StringField(16, default=b'\x7fELF\x01\x01\x01')
-    e_type      = StructField('H', default=0x2) # ET_EXEC
-    e_machine   = StructField('H', default=0x3) # EM_386
-    e_version   = StructField('I', default=0x1) # Version 1
-    e_entry     = StructField('I')
-    e_phoff     = StructField('I')
-    e_shoff     = StructField('I')
-    e_flags     = StructField('I')
-    e_ehsize    = StructField('H')
-    e_phentsize = StructField('H')
-    e_phnum     = StructField('H')
-    e_shentsize = StructField('H')
-    e_shnum     = StructField('H')
-    e_shstrndx  = StructField('H')
 
-header = Elf32Header('/bin/ls') # NOTE: it must be a 32bit ELF
+class ElfIdent(Chunk):
+    EI_MAG0 = fields.StructField('c', default=b'\x7f')
+    EI_MAG1 = fields.StructField('c', default=b'E')
+    EI_MAG2    = fields.StructField('c', default=b'L')
+    EI_MAG3    = fields.StructField('c', default=b'F')
+    EI_CLASS   = fields.StructField('B', enum=ElfEIClass, default=ElfEIClass.ELFCLASS32)  # determines the architecture
+    EI_DATA    = fields.StructField('B', enum=ElfEIData, default=ElfEIData.ELFDATA2LSB)  # determines the endianess of the binary data
+    EI_VERSION = fields.StructField('B', default=1)  # always 1
+    EI_OSABI   = fields.StructField('B', enum=ElfOsABI, default=ElfOsABI.ELFOSABI_GNU)
+    EI_ABIVERSION = fields.StructField('B')
+    EI_PAD     = fields.StringField(7)
+
+
+class ElfHeader(Chunk):
+    e_ident     = fields.ElfIdentField()
+    e_type      = elf_fields.Elf_Half(enum=ElfType, default=ElfType.ET_EXEC)
+    e_machine   = elf_fields.Elf_Half(enum=ElfMachine, default=ElfMachine.EM_386)
+    e_version   = elf_fields.Elf_Word(enum=ElfVersion, default=ElfVersion.EV_CURRENT)
+    e_entry     = elf_fields.Elf_Addr()
+    e_phoff     = elf_fields.Elf_Off()
+    e_shoff     = elf_fields.Elf_Off()
+    e_flags     = elf_fields.Elf_Word()
+    e_ehsize    = elf_fields.Elf_Half(equals_to=Dependency('size'))
+    e_phentsize = elf_fields.Elf_Half()
+    e_phnum     = elf_fields.Elf_Half()
+    e_shentsize = elf_fields.Elf_Half()
+    e_shnum     = elf_fields.Elf_Half()
+    e_shstrndx  = elf_fields.Elf_Half()
+
+
+header = ElfHeader('/bin/ls')
 print(header.e_entry.value) # will print the value associated with the field
 ```
 

@@ -49,7 +49,6 @@ class RealElf_DataType(fields.RealStructField):
         super().__init__('I', **kwargs)
 
     def get_format(self):
-        # import ipdb; ipdb.set_trace()
         return '%s%s' % (
             '<' if self.endianess == ElfEIData.ELFDATA2LSB else '>',
             self.MAP_CLASS_TYPE[self._elf_class],

@@ -430,7 +430,7 @@ class RealELFSegmentsField(fields.RealField):
             callback_name = '_handle_unpack_%s' % segment_type.name
             try:
                 callback = getattr(self, callback_name)
-            except:
+            except AttributeError:
                 callback = self._handle_unpack_undefined
 
             stream.seek(header.p_offset.value)

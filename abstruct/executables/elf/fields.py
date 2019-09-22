@@ -94,7 +94,7 @@ class RealElf_Xword(RealElf_DataType):
 class RealElf_Sxword(RealElf_DataType):
 
     MAP_CLASS_TYPE = {
-        ElfEIClass.ELFCLASS32: 'Q',
+        ElfEIClass.ELFCLASS32: 'I',  # This mean Elf_Sword for 32
         ElfEIClass.ELFCLASS64: 'Q',
     }
 

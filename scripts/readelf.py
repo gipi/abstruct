@@ -18,7 +18,7 @@ def usage(progname):
 
 
 def dump_header(hdr):
-    magic = ''.join(hdr.e_ident.data.hex())
+    magic = ''.join(hdr.e_ident.raw.hex())
     print(f'''ELF Header:
   Magic:                             {magic}
   Class:                             {hdr.e_ident.EI_CLASS}

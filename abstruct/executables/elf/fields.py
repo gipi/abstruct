@@ -16,6 +16,7 @@ from .enum import (
     ElfSegmentType,
     ElfSymbolBindType,
     ElfSymbolType,
+    ElfDynamicTagType,
 )
 from ...properties import Dependency
 
@@ -272,6 +273,17 @@ class SymbolTable(fields.RealArrayField):
         super().__init__(SymbolTableEntry, *args, **kwargs)
 
 
+class DynamicEntry(Chunk):
+    d_tag = Elf_Sxword(enum=ElfDynamicTagType)
+    d_un  = Elf_Xword()  # FIXME: create UnionField
+
+
+class RealElfDynamicSegmentField(fields.RealArrayField):
+
+    def __init__(self, *args, size=None, father=None, **kwargs):
+        super().__init__(DynamicEntry, *args, n=int(size / DynamicEntry(father=father).size()), father=father, **kwargs)
+
+
 class RealELFSectionsField(fields.RealField):
     '''Handles the data pointed by an entry of the Section header
     TODO: how do entry from this and the corresponding header behave wrt each other?
@@ -398,6 +410,11 @@ class RealELFSegmentsField(fields.RealField):
         interp = ELFInterpol(offset=entry.p_offset.value, size=entry.p_filesz.value)
 
         return interp
+
+    def _handle_unpack_PT_DYNAMIC(self, entry):
+        dyn = RealElfDynamicSegmentField(offset=entry.p_offset.value, size=entry.p_filesz.value, father=self.father)
+
+        return dyn
 
     def _handle_unpack_undefined(self, entry):
         field = fields.RealStringField(offset=entry.p_offset.value, size=entry.p_filesz.value)

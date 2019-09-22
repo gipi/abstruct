@@ -325,3 +325,47 @@ class ElfSymbolType(Enum):
     STT_FUNC   = 0x02
     STT_SECTION = 0x03
     STT_FILE   = 0x04
+
+
+class ElfDynamicTagType(Enum):
+    DT_NULL     = 0x00
+    DT_NEEDED   = 0x01
+    DT_PLTRELSZ = 0x02
+    DT_PLTGOT   = 0x03
+    DT_HASH     = 0x04
+    DT_STRTAB   = 0x05
+    DT_SYMTAB   = 0x06
+    DT_RELA     = 0x07
+    DT_RELASZ   = 0x08
+    DT_RELAENT  = 0x09
+    DT_STRSZ    = 0x0a
+    DT_SYMENT   = 0x0b
+    DT_INIT     = 0x0c
+    DT_FINI     = 0x0d
+    DT_SONAME   = 0x0e
+    DT_RPATH    = 0x0f
+    DT_SYMBOLIC = 0x10
+    DT_REL      = 0x11
+    DT_RELSZ    = 0x12
+    DT_RELENT   = 0x13
+    DT_PLTREL   = 0x14
+    DT_DEBUG    = 0x15
+    DT_TEXTREL  = 0x16
+    DT_JMPREL   = 0x17
+    DT_BIND_NOW = 0x18
+    DT_INIT_ARRAY = 0x19
+    DT_FINI_ARRAY = 0x1a
+    DT_INIT_ARRAYSZ = 0x1b
+    DT_FINI_ARRAYSZ = 0x1c
+    DT_RUNPATH  = 0x1d
+    DT_FLAGS    = 0x1e
+    DT_ENCODING = 0x1f
+    DT_PREINIT_ARRAY = 0x20
+    DT_PREINIT_ARRAYSZ = 0x21
+    DT_SYMTAB_SHNDX = 0x22
+    GNU_HASH    = 0x6ffffef5
+    FLAGS_1     = 0x6ffffffb
+    VERNEED     = 0x6ffffffe
+    VERNEEDNUM  = 0x6fffffff
+    VERSYM      = 0x6ffffff0
+    RELCOUNT    = 0x6ffffffa

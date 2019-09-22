@@ -433,6 +433,8 @@ class RealELFSegmentsField(fields.RealField):
             except:
                 callback = self._handle_unpack_undefined
 
+            stream.seek(header.p_offset.value)
+
             field = callback(header)
             field.unpack(stream)
 

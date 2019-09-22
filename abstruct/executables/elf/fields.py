@@ -49,10 +49,13 @@ class RealElf_DataType(fields.RealStructField):
         super().__init__('I', **kwargs)
 
     def get_format(self):
-        return '%s%s' % (
+        fmt = '%s%s' % (
             '<' if self.endianess == ElfEIData.ELFDATA2LSB else '>',
             self.MAP_CLASS_TYPE[self._elf_class],
         )
+        logger.debug(f'format: \'{fmt}\'')
+
+        return fmt
 
 
 class RealElf_Addr(RealElf_DataType):

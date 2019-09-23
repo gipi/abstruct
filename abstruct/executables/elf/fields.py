@@ -217,8 +217,8 @@ class RealSymbolInfoField(fields.RealStructField):
     def __init__(self, *args, **kwargs):
         super().__init__('B', *args, **kwargs)
 
-    def __str__(self):
-        return '<Info(%s,%s)>' % (self.bind, self.type)
+    def __repr__(self):
+        return '<%s(%s,%s)>' % (self.__class__.__name__, self.bind, self.type)
 
     def unpack(self, stream):
         '''it reads and then split the values in bind and type'''

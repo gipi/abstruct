@@ -8,7 +8,7 @@ class ElfRelEntry(Chunk):
     r_info   = Elf_Word()
 
 
-class RelocationTable(fields.RealArrayField):
+class ElfRelocationTable(fields.RealArrayField):
     def __init__(self, *args, **kwargs):
         super().__init__(ElfRelEntry, *args, **kwargs)
 

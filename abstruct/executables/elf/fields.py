@@ -347,7 +347,7 @@ class RealELFSectionsField(fields.RealField):
 
                 self.value.append(section)
             elif section_type == ElfSectionType.SHT_REL:
-                from .reloc import RelocationTable
+                from .reloc import ElfRelocationTable
                 from .reloc import ElfRelEntry
                 table_size = field.sh_size.value
 
@@ -357,7 +357,7 @@ class RealELFSectionsField(fields.RealField):
 
                 stream.seek(field.sh_offset.value)
 
-                section = RelocationTable(n=n, father=self)
+                section = ElfRelocationTable(n=n, father=self)
                 section.unpack(stream)
 
                 self.value.append(section)

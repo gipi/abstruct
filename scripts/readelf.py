@@ -4,7 +4,10 @@ import os
 import logging
 
 from abstruct.executables.elf import ElfFile
-from abstruct.executables.elf.enum import ElfSegmentType
+from abstruct.executables.elf.enum import (
+    ElfSegmentType,
+    ElfDynamicTagType,
+)
 
 if 'DEBUG' in os.environ:
     logging.basicConfig()
@@ -81,6 +84,12 @@ def dump_dynamic(dyn):
         print(f''' {entry.d_tag.value:<35} {entry.d_un}''')
 
 
+def dump_reloc(relocations):
+    print(''' Offset     Info    Type            Sym.Value  Sym. Name''')
+    for rel in relocations.value:
+        print(f'''{rel.r_offset} {rel.r_info.type:<20} {rel.r_info.sym}''')
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         usage(sys.argv[0])
@@ -99,3 +108,13 @@ if __name__ == '__main__':
         dump_segments(elf.segments_header, elf.segments)
     if elf.dynamic:
         dump_dynamic(elf.dynamic)
+
+        needed = elf.dynamic[ElfDynamicTagType.DT_NEEDED]
+        print(needed)
+        print(elf.dynamic.get(ElfDynamicTagType.DT_NEEDED))
+
+        print(elf.dynamic.get(ElfDynamicTagType.DT_REL))
+
+        rels = elf.dynamic.get(ElfDynamicTagType.DT_REL)
+        if rels:
+            dump_reloc(rels)

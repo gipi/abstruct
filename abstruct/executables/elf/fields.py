@@ -17,6 +17,7 @@ from .enum import (
     ElfSymbolBindType,
     ElfSymbolType,
     ElfDynamicTagType,
+    ElfRelocationType_i386,
 )
 from ...properties import Dependency
 from ...streams import Stream
@@ -206,6 +207,22 @@ class RealSectionStringTable(fields.RealField):
 
 class SectionStringTable(fields.Field):
     real = RealSectionStringTable
+
+
+class RealElfRelocationInfoField(RealElf_Sword):
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(sym={self.sym}, type={self.type})'
+
+    def unpack(self, stream):
+        super().unpack(stream)
+
+        self.sym  = self.value >> 8
+        self.type = ElfRelocationType_i386(self.value & 0xff)
+
+
+class ElfRelocationInfoField(fields.StructField):
+    real = RealElfRelocationInfoField
 
 
 class RealSymbolInfoField(fields.RealStructField):

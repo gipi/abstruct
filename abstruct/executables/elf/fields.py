@@ -443,6 +443,7 @@ class RealELFSegmentsField(fields.RealField):
             stream.seek(header.p_offset.value)
 
             field = callback(header)
+            field.vaddr = header.p_vaddr.value  # FIXME: a little hacky
             field.unpack(stream)
 
             self.value.append(field)

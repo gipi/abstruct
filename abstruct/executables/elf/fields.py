@@ -19,6 +19,7 @@ from .enum import (
     ElfDynamicTagType,
 )
 from ...properties import Dependency
+from ...streams import Stream
 
 
 logger = logging.getLogger(__name__)
@@ -279,6 +280,77 @@ class RealElfDynamicSegmentField(fields.RealArrayField):
 
     def __init__(self, *args, size=None, father=None, **kwargs):
         super().__init__(DynamicEntry, *args, n=int(size / DynamicEntry(father=father).size()), father=father, **kwargs)
+        self._dict = {}
+
+    def _resolve_entry_DT_NEEDED(self, entry, elf):
+        # here we have to resolve the string pointed by the string table for the dynamic
+        string_table_addr = self[ElfDynamicTagType.DT_STRTAB].d_un.value
+        string_table_size = self[ElfDynamicTagType.DT_STRSZ].d_un.value
+        segment = elf.segments.get_segment_for_address(string_table_addr)
+
+        raw = segment.raw
+        offset = string_table_addr - segment.vaddr
+
+        string_table = RealSectionStringTable(size=string_table_size)
+        stream = Stream(raw)
+        stream.seek(offset)
+        string_table.unpack(stream)
+
+        return string_table.get(entry.d_un.value)
+
+    def _resolve_entry_DT_REL(self, entry, elf):
+        from .reloc import ElfRelocationTable
+        rel_table_addr = self[ElfDynamicTagType.DT_REL].d_un.value
+        rel_table_size = self[ElfDynamicTagType.DT_RELSZ].d_un.value
+        segment = elf.segments.get_segment_for_address(rel_table_addr)
+
+        raw = segment.raw
+        offset = rel_table_addr - segment.vaddr
+
+        rel_table = ElfRelocationTable(size=rel_table_size, father=self.father)
+        stream = Stream(raw)
+        stream.seek(offset)
+        rel_table.unpack(stream)
+
+        return rel_table
+
+    def _resolve_entry_default(entry, elf):
+        self.logger.debug('not implemented')
+        return None
+
+    def append(self, element):
+        super().append(element)
+
+        # save also in a dictionary using as keys the ElfDynamicTagType
+        key = element.d_tag.value
+        if key not in self._dict:
+            self._dict[key] = element
+        else:  # if there is already a key
+            value = self._dict[key]
+            if isinstance(value, list):  # and is is a list
+                value.append(element)  # append
+            else:
+                self._dict[key] = [value, element]  # or create a list
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def get(self, typeOf):
+        '''It returns something to which this instance points to'''
+        element = self[typeOf]
+
+        elf = Dependency('@ElfFile').resolve_field(self)
+
+        callback_name = f'_resolve_entry_{element.d_tag.value.name}'
+
+        try:
+            callback = getattr(self, callback_name)
+        except AttributeError:
+            callback = self._resolve_entry_default
+
+        field = callback(element, elf)
+
+        return field
 
 
 class RealELFSectionsField(fields.RealField):

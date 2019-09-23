@@ -44,8 +44,8 @@ class RealElf_DataType(fields.RealStructField):
     '''Wrapper for all the datatype that resolves internally to the EI_CLASS'''
 
     def __init__(self, **kwargs):
-        self._elf_class = Dependency('elf_header.e_ident.EI_CLASS')
-        kwargs['endianess'] = Dependency('elf_header.e_ident.EI_DATA')
+        self._elf_class = Dependency('header.e_ident.EI_CLASS')
+        kwargs['endianess'] = Dependency('header.e_ident.EI_DATA')
         super().__init__('I', **kwargs)
 
     def get_format(self):
@@ -235,7 +235,7 @@ class SymbolTableEntry(Chunk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._elf_class = Dependency('elf_header.e_ident.EI_CLASS')
+        self._elf_class = Dependency('header.e_ident.EI_CLASS')
 
     def get_fields(self):  # TODO: factorize this code in more pythonic way
         original_fields = super().get_fields()

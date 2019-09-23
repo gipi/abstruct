@@ -347,14 +347,14 @@ class ELFTest(unittest.TestCase):
 
     def test_empty(self):
         elf = ElfFile()
-        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_EXEC)
-        self.assertEqual(elf.elf_header.e_ehsize.value, 52)
+        self.assertEqual(elf.header.e_type.value, ElfType.ET_EXEC)
+        self.assertEqual(elf.header.e_ehsize.value, 52)
 
     def test_minimal_from_zero(self):
         elf = ElfFile()
         str_header = SectionHeader(father=elf)
         str_header.sh_type.value = ElfSectionType.SHT_STRTAB
-        elf.sections.value.append(str_header)
+        elf.sections_header.value.append(str_header)
         with open('/tmp/minimal', 'wb') as f:
             f.write(elf.pack())
 
@@ -369,33 +369,33 @@ class ELFTest(unittest.TestCase):
 
         elf = ElfFile(path_elf)
 
-        self.assertEqual(elf.elf_header.e_ident.EI_MAG0.value, b'\x7f')
-        self.assertEqual(elf.elf_header.e_ident.EI_MAG1.value, b'E')
-        self.assertEqual(elf.elf_header.e_ident.EI_MAG2.value, b'L')
-        self.assertEqual(elf.elf_header.e_ident.EI_MAG3.value, b'F')
-        self.assertEqual(elf.elf_header.e_ident.EI_CLASS.value, ElfEIClass.ELFCLASS32)
-        self.assertEqual(elf.elf_header.e_ident.EI_DATA.value, ElfEIData.ELFDATA2LSB)
+        self.assertEqual(elf.header.e_ident.EI_MAG0.value, b'\x7f')
+        self.assertEqual(elf.header.e_ident.EI_MAG1.value, b'E')
+        self.assertEqual(elf.header.e_ident.EI_MAG2.value, b'L')
+        self.assertEqual(elf.header.e_ident.EI_MAG3.value, b'F')
+        self.assertEqual(elf.header.e_ident.EI_CLASS.value, ElfEIClass.ELFCLASS32)
+        self.assertEqual(elf.header.e_ident.EI_DATA.value, ElfEIData.ELFDATA2LSB)
 
-        self.assertEqual(elf.elf_header.e_machine.value, ElfMachine.EM_386)
-        self.assertEqual(elf.elf_header.e_type.value, ElfType.ET_DYN)  # WHY IS COMPILED AS DYN? ALIENS!
+        self.assertEqual(elf.header.e_machine.value, ElfMachine.EM_386)
+        self.assertEqual(elf.header.e_type.value, ElfType.ET_DYN)  # WHY IS COMPILED AS DYN? ALIENS!
 
         # sections
         SECTIONS_NUMBER = 30
-        self.assertEqual(elf.elf_header.e_ehsize.value, 52)
-        self.assertEqual(elf.sections.n, SECTIONS_NUMBER)
-        self.assertEqual(elf.elf_header.e_shnum.value, SECTIONS_NUMBER)
-        self.assertEqual(elf.elf_header.e_shstrndx.value, 29)
-        self.assertEqual(len(elf.sections), SECTIONS_NUMBER)
-        self.assertEqual(len(elf.sections_data.value), SECTIONS_NUMBER)
-        self.assertEqual(elf.sections.value[29].sh_type.value, ElfSectionType.SHT_STRTAB)
-        self.assertEqual(elf.sections.value[29].offset, 7212)
-        self.assertEqual(elf.sections.value[28].sh_type.value, ElfSectionType.SHT_STRTAB)
+        self.assertEqual(elf.header.e_ehsize.value, 52)
+        self.assertEqual(elf.sections_header.n, SECTIONS_NUMBER)
+        self.assertEqual(elf.header.e_shnum.value, SECTIONS_NUMBER)
+        self.assertEqual(elf.header.e_shstrndx.value, 29)
+        self.assertEqual(len(elf.sections_header), SECTIONS_NUMBER)
+        self.assertEqual(len(elf.sections.value), SECTIONS_NUMBER)
+        self.assertEqual(elf.sections_header.value[29].sh_type.value, ElfSectionType.SHT_STRTAB)
+        self.assertEqual(elf.sections_header.value[29].offset, 7212)
+        self.assertEqual(elf.sections_header.value[28].sh_type.value, ElfSectionType.SHT_STRTAB)
         # programs
-        self.assertEqual(elf.elf_header.e_phentsize.value, 32)
-        self.assertEqual(elf.elf_header.e_phnum.value, 9)
-        self.assertEqual(len(elf.programs), 9)
+        self.assertEqual(elf.header.e_phentsize.value, 32)
+        self.assertEqual(elf.header.e_phnum.value, 9)
+        self.assertEqual(len(elf.segments_header), 9)
         self.assertEqual(  # we remove the last three elements since have not well defined type
-            [_.p_type.value for _ in elf.programs.value[:-3]],
+            [_.p_type.value for _ in elf.segments_header.value[:-3]],
             [_ for _ in [
                 ElfSegmentType.PT_PHDR,
                 ElfSegmentType.PT_INTERP,
@@ -444,17 +444,17 @@ class ELFTest(unittest.TestCase):
 
         print(elf.dyn_symbols)
 
-        print(elf.sections.value[14])
+        print(elf.sections_header.value[14])
         from .executables.elf.code import disasm, CS_MODE_32, CS_ARCH_X86
-        dot_text_starting_offset = elf.sections.value[14].sh_addr.value
+        dot_text_starting_offset = elf.sections_header.value[14].sh_addr.value
         print('\n'.join(
             ["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str)
                 for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
         self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.RealSectionStringTable()))
 
         # check if the string table is dumped correctly
-        index_section_string_table = elf.elf_header.e_shstrndx.value
-        section_string_table = elf.sections.value[index_section_string_table]
+        index_section_string_table = elf.header.e_shstrndx.value
+        section_string_table = elf.sections_header.value[index_section_string_table]
         print(section_string_table.pack())
 
 

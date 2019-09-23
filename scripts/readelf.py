@@ -89,11 +89,13 @@ if __name__ == '__main__':
 
     elf = ElfFile(path)
 
-    dump_header(elf.elf_header)
+    dump_header(elf.header)
 
-    section_table = elf.sections_data.value[elf.elf_header.e_shstrndx.value]
-    dump_sections(elf.sections, section_table)
-    dump_segments(elf.programs, elf.segments_data)
-    dump_dynamic(elf.dynamic)
+    section_table = elf.sections.value[elf.header.e_shstrndx.value] if len(elf.sections.value) > 0 else None
+    if elf.sections_header.value:
+        dump_sections(elf.sections_header, section_table)
+
+    if elf.segments_header.value:
+        dump_segments(elf.segments_header, elf.segments)
     if elf.dynamic:
         dump_dynamic(elf.dynamic)

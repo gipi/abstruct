@@ -71,7 +71,7 @@ class ProgramHeader(Chunk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._elf_class = Dependency('elf_header.e_ident.EI_CLASS')
+        self._elf_class = Dependency('header.e_ident.EI_CLASS')
 
     def get_fields(self):
         original_fields = super().get_fields()
@@ -110,16 +110,16 @@ class ProgramHeader(Chunk):
 
 
 class ElfFile(Chunk):
-    elf_header = fields.ElfHeaderField()
-    sections   = fields.ArrayField(SectionHeader, n=Dependency('elf_header.e_shnum'), offset=Dependency('elf_header.e_shoff'))
-    programs   = fields.ArrayField(ProgramHeader, n=Dependency('elf_header.e_phnum'), offset=Dependency('elf_header.e_phoff'))
-    sections_data = elf_fields.ELFSectionsField(Dependency('sections'))
-    segments_data = elf_fields.ELFSegmentsField(Dependency('programs'))
+    header          = fields.ElfHeaderField()
+    sections_header = fields.ArrayField(SectionHeader, n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
+    segments_header = fields.ArrayField(ProgramHeader, n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
+    sections        = elf_fields.ELFSectionsField(Dependency('sections_header'))
+    segments        = elf_fields.ELFSegmentsField(Dependency('segments_header'))
 
     @property
     def section_names_table(self):
         '''return the string SectionStringTable with the names of the sections'''
-        return self.sections_data.value[self.elf_header.e_shstrndx.value]
+        return self.sections.value[self.header.e_shstrndx.value]
 
     @property
     def symbol_names_table(self):
@@ -132,7 +132,7 @@ class ElfFile(Chunk):
     @property
     def section_names(self):
         string_table = self.section_names_table
-        sections_names = [string_table.get(_.sh_name.value) for _ in self.sections.value]
+        sections_names = [string_table.get(_.sh_name.value) for _ in self.sections_header.value]
 
         return sections_names
 
@@ -140,7 +140,7 @@ class ElfFile(Chunk):
         sections_names = self.section_names
         index = sections_names.index(name)
 
-        return self.sections_data.value[index]
+        return self.sections.value[index]
 
     @property
     def symbol_names(self):
@@ -171,7 +171,7 @@ class ElfFile(Chunk):
         '''It returns the dynamic segment of the ELF executable if it exists, i.e.
         an instance of RealElfDynamicSegmentField.'''
         dyn = None
-        for segment in self.segments_data.value:
+        for segment in self.segments.value:
             if isinstance(segment, elf_fields.RealElfDynamicSegmentField):
                 dyn = segment
                 break

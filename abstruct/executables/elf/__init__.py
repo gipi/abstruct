@@ -165,3 +165,15 @@ class ElfFile(Chunk):
         dyn_symbols_table_names = self.dynamic_symbol_names_table
 
         return {dyn_symbols_table_names.get(_.st_name.value): _ for _ in dyn_symbols_table.value}
+
+    @property
+    def dynamic(self):
+        '''It returns the dynamic segment of the ELF executable if it exists, i.e.
+        an instance of RealElfDynamicSegmentField.'''
+        dyn = None
+        for segment in self.segments_data.value:
+            if isinstance(segment, elf_fields.RealElfDynamicSegmentField):
+                dyn = segment
+                break
+
+        return dyn

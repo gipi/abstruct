@@ -75,10 +75,10 @@ def dump_sections(sh, st):
 
 
 def dump_dynamic(dyn):
-    print(f'''Dynamic section at offset 0x20dd8 contains 27 entries:
-  Tag        Tipo                         Nome/Valore''')
+    print(f'''Dynamic section at offset 0x{dyn.offset:x} contains {dyn.n} entries:
+  Tag        Type                                          Value''')
     for entry in dyn.value:
-        print(f''' 0x0000000000000001 (NEEDED)             Libreria condivisa: [libselinux.so.1]''')
+        print(f''' {entry.d_tag.value:<35} {entry.d_un}''')
 
 
 if __name__ == '__main__':
@@ -94,3 +94,6 @@ if __name__ == '__main__':
     section_table = elf.sections_data.value[elf.elf_header.e_shstrndx.value]
     dump_sections(elf.sections, section_table)
     dump_segments(elf.programs, elf.segments_data)
+    dump_dynamic(elf.dynamic)
+    if elf.dynamic:
+        dump_dynamic(elf.dynamic)

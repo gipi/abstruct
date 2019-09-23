@@ -399,7 +399,7 @@ class RealELFSegmentsField(fields.RealField):
 
     def _handle_unpack_PT_PHDR(self, entry):
         '''It handles the header, simply using a StringField'''
-        field = fields.RealStringField(entry.p_filesz.value)
+        field = fields.RealStringField(n=entry.p_filesz.value)
 
         return field
 
@@ -414,7 +414,7 @@ class RealELFSegmentsField(fields.RealField):
         return dyn
 
     def _handle_unpack_undefined(self, entry):
-        field = fields.RealStringField(offset=entry.p_offset.value, size=entry.p_filesz.value)
+        field = fields.RealStringField(offset=entry.p_offset.value, n=entry.p_filesz.value)
 
         return field
 

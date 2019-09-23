@@ -208,11 +208,6 @@ class SectionStringTable(fields.Field):
 
 
 class RealSymbolInfoField(fields.RealStructField):
-    '''
-#define ELF32_ST_BIND(i) (( i ) >> 4)
-#define ELF32_ST_TYPE(i) (( i ) & 0xf)
-#define ELF32_ST_INFO(b, t) ((( b ) << 4) + (( t ) & 0xf))
-    '''
 
     def __init__(self, *args, **kwargs):
         super().__init__('B', *args, **kwargs)

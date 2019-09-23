@@ -14,6 +14,10 @@ def get_root_from_chunk(instance):
     return get_instance_from_chunk(instance, condition=lambda x: x.father is None)
 
 
+def get_instance_from_class_name(instance, name):
+    return get_instance_from_chunk(instance, condition=lambda x: x.__class__.__name__ == name)
+
+
 def get_instance_from_chunk(instance, condition):
     is_root = condition(instance)
     father = instance
@@ -55,16 +59,25 @@ class Dependency(object):
         # like python modules
         fields_path = self.expression.split('.')  # FIXME: create class FieldPath to encapsulate
 
+        # find the root the resolution starts
         if fields_path[0] != '':
-            field = get_root_from_chunk(instance)
-            for component_name in fields_path:
-                field = getattr(field, component_name)
+            if fields_path[0].startswith('@'):  # we want to resolve wrt a class
+                class_name = fields_path[0][1:]
+                self.logger.debug('resolve from class name: \'%s\'' % class_name)
+                field = get_instance_from_class_name(instance, class_name)
+
+                fields_path = fields_path[1:]  # skip the first one that is already resolved
+            else:
+                field = get_root_from_chunk(instance)
+                self.logger.debug('resolve from root: \'%s\'' % field.__class__.__name__)
         else:  # we have a relative dependency
             field = instance.father
             self.logger.debug('resolve from father: \'%s\'' % field.__class__.__name__)
-            for component_name in fields_path[1:]:
-                field = getattr(field, component_name)
+            fields_path = fields_path[1:]  # skip the first one that is empty
 
+        # now we can resolve each component
+        for component_name in fields_path:
+            field = getattr(field, component_name)
         self.logger.debug('resolved as field %s' % field.__class__.__name__)
 
         return field

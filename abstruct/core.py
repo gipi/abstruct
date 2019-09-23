@@ -83,6 +83,7 @@ class Chunk(metaclass=MetaChunk):
         self.offset = offset
         self.father = father
         self._phase = ChunkPhase.INIT
+        self.logger = logging.getLogger(__name__)
 
         for name, field_constructor in self.__class__._meta.fields:
             logger.debug('field \'%s\' initialized' % name)

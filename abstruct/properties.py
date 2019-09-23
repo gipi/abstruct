@@ -2,10 +2,6 @@ import logging
 from enum import Enum
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
 class ChunkPhase(Enum):
     '''Enum to state the actual phase of a chunk'''
     INIT      = 0
@@ -46,12 +42,14 @@ class Dependency(object):
     def __init__(self, expression, obj=None):
         self.expression = expression
         self.obj = obj
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
 
     def __call__(self, obj):
         return Dependency(self.expression, obj=obj)
 
     def resolve_field(self, instance):
-        logger.debug('trying to resolve \'%s\'' % self.expression)
+        self.logger.debug('trying to resolve \'%s\'' % self.expression)
         field = None
         # here split the expression into the components
         # like python modules
@@ -59,16 +57,15 @@ class Dependency(object):
 
         if fields_path[0] != '':
             field = get_root_from_chunk(instance)
-            logger.debug('resolve from root: \'%s\'' % field.__class__.__name__)
             for component_name in fields_path:
                 field = getattr(field, component_name)
         else:  # we have a relative dependency
             field = instance.father
-            logger.debug('resolve from father: \'%s\'' % field.__class__.__name__)
+            self.logger.debug('resolve from father: \'%s\'' % field.__class__.__name__)
             for component_name in fields_path[1:]:
                 field = getattr(field, component_name)
 
-        logger.debug('resolved as field %s' % field.__class__.__name__)
+        self.logger.debug('resolved as field %s' % field.__class__.__name__)
 
         return field
 
@@ -86,7 +83,7 @@ class Dependency(object):
         else:
             value = field.value
 
-        logger.debug('resolved with value %s' % value)
+        self.logger.debug('resolved with value %s' % value)
 
         return value
 

@@ -392,6 +392,16 @@ class RealELFSegmentsField(fields.RealField):
 
         return size
 
+    def get_segment_for_address(self, addr):
+        '''It returns the entry that contains the address specified'''
+        segments_header = Dependency('segments_header').resolve(self)
+
+        for idx, segment in enumerate(segments_header):
+            if segment.p_vaddr.value <= addr < (segment.p_vaddr.value + segment.p_memsz.value):
+                return self.value[idx]
+
+        return None
+
     def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
         for field in self.header:

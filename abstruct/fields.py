@@ -337,20 +337,29 @@ class RealArrayField(RealField):
 
         return data  # FIXME
 
+    def instance_element(self):
+        return self.field_cls(father=self)  # pass the father so that we don't lose the hierarchy
+
+    def unpack_element(self, element, stream):
+        element.unpack(stream)
+
+    def append(self, element):
+        self.value.append(element)
+
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
         self.value = []  # reset the fields already present
         real_n = self.n if self.n is not None else 100  # FIXME
         for idx in range(real_n):
-            element = self.field_cls(father=self)  # pass the father so that we don't lose the hierarchy
+            element = self.instance_element()
             logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
 
             element_offset = stream.tell()
-            element.unpack(stream)
+            self.unpack_element(element, stream)
             element.offset = element_offset
 
-            self.value.append(element)
+            self.append(element)
 
             if self._canary is not None:
                 if self._canary(element):

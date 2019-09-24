@@ -84,10 +84,10 @@ def dump_dynamic(dyn):
         print(f''' {entry.d_tag.value:<35} {entry.d_un}''')
 
 
-def dump_reloc(relocations):
+def dump_reloc(relocations, dynamic):
     print(''' Offset     Info    Type            Sym.Value  Sym. Name''')
     for rel in relocations.value:
-        print(f'''{rel.r_offset} {rel.r_info.type:<20} {rel.r_info.sym}''')
+        print(f'''{rel.r_offset} {rel.r_info.type:<20} {dynamic.get_symbol_name(rel.r_info.sym)}''')
 
 
 if __name__ == '__main__':
@@ -117,4 +117,4 @@ if __name__ == '__main__':
 
         rels = elf.dynamic.get(ElfDynamicTagType.DT_REL)
         if rels:
-            dump_reloc(rels)
+            dump_reloc(rels, elf.dynamic)

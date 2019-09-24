@@ -335,6 +335,50 @@ class RealElfDynamicSegmentField(fields.RealArrayField):
         self.logger.debug('not implemented')
         return None
 
+    def get_symbol(self, idx):
+        '''It return the symbol entry at index idx'''
+        # the DT_SYMTAB is not resolvable because we don't have an explicit size for it
+        # so we take the segment that contains it and read the entry at the given offset
+        sym_table_addr = self[ElfDynamicTagType.DT_SYMTAB].d_un.value
+        sym_entry_size = self[ElfDynamicTagType.DT_SYMENT].d_un.value
+
+        elf = Dependency('@ElfFile').resolve_field(self)
+        segment = elf.segments.get_segment_for_address(sym_table_addr)
+
+        raw = segment.raw
+        offset = sym_table_addr - segment.vaddr
+
+        entry = SymbolTableEntry(father=self.father)
+
+        stream = Stream(raw)
+        stream.seek(offset + (idx * sym_entry_size))
+
+        entry.unpack(stream)
+
+        return entry
+
+    def get_symbol_name(self, idx):
+        return self.get_string_table().get(self.get_symbol(idx).st_name.value)
+
+    def get_string_table(self):
+        str_table_addr = self[ElfDynamicTagType.DT_STRTAB].d_un.value
+        str_table_size = self[ElfDynamicTagType.DT_STRSZ].d_un.value
+
+        elf = Dependency('@ElfFile').resolve_field(self)
+        segment = elf.segments.get_segment_for_address(str_table_addr)
+
+        raw = segment.raw
+        offset = str_table_addr - segment.vaddr
+
+        entry = RealSectionStringTable(size=str_table_size, father=self.father)
+
+        stream = Stream(raw)
+        stream.seek(offset)
+
+        entry.unpack(stream)
+
+        return entry
+
     def append(self, element):
         super().append(element)
 

@@ -63,7 +63,7 @@ class SectionHeader(Chunk):
     sh_entsize   = elf_fields.Elf_Xword()
 
 
-class ProgramHeader(Chunk):
+class SegmentHeader(Chunk):
     '''This entity represent runtime information of the executable.
 
     Note: the field "p_flags"'s position depends on the ELF class.
@@ -112,7 +112,7 @@ class ProgramHeader(Chunk):
 class ElfFile(Chunk):
     header          = fields.ElfHeaderField()
     sections_header = fields.ArrayField(SectionHeader, n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
-    segments_header = fields.ArrayField(ProgramHeader, n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
+    segments_header = fields.ArrayField(SegmentHeader, n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
     sections        = elf_fields.ELFSectionsField(Dependency('sections_header'))
     segments        = elf_fields.ELFSegmentsField(Dependency('segments_header'))
 

@@ -4,10 +4,6 @@ import logging
 from .properties import Offset
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
 class Stream(object):
     '''This is a simple wrapper around String/File object to
     uniform its properties: mainly we need to have a seek() method
@@ -18,6 +14,7 @@ class Stream(object):
         self.flags = flags # this probably need to be a more elaborate value (like mmap)
         self.obj = obj
         self.history = []
+        self.logger = logging.getLogger(__name__)
 
         init_method_name = 'init_%s' % self.obj.__class__.__name__
 
@@ -33,7 +30,7 @@ class Stream(object):
 
     def init_str(self):
         '''We think this is a path'''
-        logger.debug('opening path \'%s\'' % self.obj)
+        self.logger.debug('opening path \'%s\'' % self.obj)
         self.obj = open(self.obj, 'rb')
 
     def init_bytes(self):
@@ -50,7 +47,7 @@ class Stream(object):
         else:
             raise ValueError('\'%s\' is the wrong kind of offset to use' % offset.__class__.__name__)
 
-        logger.debug('stream seek() at %08x' % real_offset)
+        self.logger.debug('stream seek() at %08x' % real_offset)
         self.obj.seek(real_offset)
 
     def read_all(self):

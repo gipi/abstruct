@@ -23,10 +23,6 @@ from ...properties import Dependency
 from ...streams import Stream
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
 class ElfIdent(Chunk):
     EI_MAG0 = fields.StructField('c', default=b'\x7f')
     EI_MAG1 = fields.StructField('c', default=b'E')
@@ -55,7 +51,7 @@ class RealElf_DataType(fields.RealStructField):
             '<' if self.endianess == ElfEIData.ELFDATA2LSB else '>',
             self.MAP_CLASS_TYPE[self._elf_class],
         )
-        logger.debug(f'format: \'{fmt}\'')
+        self.logger.debug(f'format: \'{fmt}\'')
 
         return fmt
 
@@ -438,17 +434,17 @@ class RealELFSectionsField(fields.RealField):
     def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
         for field in self.header:
-            logger.debug('pack()()()')
+            self.logger.debug('pack()()()')
 
     def unpack(self, stream):
         self.value = []  # reset the entries
         for field in self.header:
             section_type = field.sh_type.value
-            logger.debug('found section type %s' % section_type)
-            logger.debug('offset: %d size: %d' % (field.sh_offset.value, field.sh_size.value))
+            self.logger.debug('found section type %s' % section_type)
+            self.logger.debug('offset: %d size: %d' % (field.sh_offset.value, field.sh_size.value))
 
             if section_type == ElfSectionType.SHT_STRTAB:
-                logger.debug('unpacking string table')
+                self.logger.debug('unpacking string table')
                 # we need to unpack at most sh_size bytes
                 stream.seek(field.sh_offset.value)
                 section = RealSectionStringTable(size=field.sh_size.value)
@@ -457,9 +453,9 @@ class RealELFSectionsField(fields.RealField):
                 print(section.value)
             elif section_type == ElfSectionType.SHT_SYMTAB:
                 table_size = field.sh_size.value
-                logger.debug('unpacking symbol table')
+                self.logger.debug('unpacking symbol table')
                 n = int(table_size / SymbolTableEntry(father=self).size())  # FIXME: create Dependency w algebraic operation
-                logger.debug(' with %d entries' % n)
+                self.logger.debug(' with %d entries' % n)
 
                 stream.seek(field.sh_offset.value)
 
@@ -469,9 +465,9 @@ class RealELFSectionsField(fields.RealField):
                 self.value.append(section)
             elif section_type == ElfSectionType.SHT_DYNSYM:
                 table_size = field.sh_size.value
-                logger.debug('unpacking dynamic symbol table')
+                self.logger.debug('unpacking dynamic symbol table')
                 n = int(table_size / SymbolTableEntry(father=self).size())  # FIXME: create Dependency w algebraic operation
-                logger.debug(' with %d entries' % n)
+                self.logger.debug(' with %d entries' % n)
 
                 stream.seek(field.sh_offset.value)
 
@@ -484,9 +480,9 @@ class RealELFSectionsField(fields.RealField):
                 from .reloc import ElfRelEntry
                 table_size = field.sh_size.value
 
-                logger.debug('unpacking relocation table')
+                self.logger.debug('unpacking relocation table')
                 n = int(table_size / ElfRelEntry(father=self).size())  # FIXME: create Dependency w algebraic operation
-                logger.debug(' with %d entries' % n)
+                self.logger.debug(' with %d entries' % n)
 
                 stream.seek(field.sh_offset.value)
 
@@ -496,7 +492,7 @@ class RealELFSectionsField(fields.RealField):
                 self.value.append(section)
                 print(section)
             else:
-                logger.debug('unpacking unhandled data of type %s' % section_type)
+                self.logger.debug('unpacking unhandled data of type %s' % section_type)
                 stream.seek(field.sh_offset.value)
                 section = fields.RealStringField(field.sh_size.value)
                 section.unpack(stream)
@@ -538,7 +534,7 @@ class RealELFSegmentsField(fields.RealField):
     def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
         for field in self.header:
-            logger.debug('pack()()()')
+            self.logger.debug('pack()()()')
 
     def _handle_unpack_PT_PHDR(self, entry):
         '''It handles the header, simply using a StringField'''
@@ -564,8 +560,8 @@ class RealELFSegmentsField(fields.RealField):
     def unpack_segment(self, stream, header):
             segment_type = header.p_type.value
 
-            logger.debug('found segment type %s' % segment_type)
-            logger.debug('offset: %d size: %d' % (header.p_offset.value, header.p_filesz.value))
+            self.logger.debug('found segment type %s' % segment_type)
+            self.logger.debug('offset: %d size: %d' % (header.p_offset.value, header.p_filesz.value))
 
             callback_name = '_handle_unpack_%s' % segment_type.name
             try:

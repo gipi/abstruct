@@ -6,9 +6,6 @@ from .properties import Dependency, ChunkPhase
 from .streams import Stream
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 class Endianess(Enum):
     LITTLE_ENDIAN = auto()
@@ -70,7 +67,7 @@ class RealField(object):
         '''If the field is a Field then return directly the 'value' attribute'''
         field = super().__getattribute__(name)
         if isinstance(field, Dependency) and self._resolve:
-            logger.debug('trying to resolve dependency for \'%s\' from \'%s\'' % (name, self.name))
+            self.logger.debug('trying to resolve dependency for \'%s\' from \'%s\'' % (name, self.name))
             return field.resolve(self)
 
         return field
@@ -87,7 +84,7 @@ class RealField(object):
             field = super().__getattribute__(name)
             self.__dict__['_resolve'] = True
             if isinstance(field, Dependency):
-                logger.debug('set for field \'%s\' the value \'%s\'depends on' % (name, value))
+                self.logger.debug('set for field \'%s\' the value \'%s\'depends on' % (name, value))
                 real_field = field.resolve_field(self)
                 real_field.value = value
                 return
@@ -358,7 +355,7 @@ class RealArrayField(RealField):
         real_n = self.n if self.n is not None else 100  # FIXME
         for idx in range(real_n):
             element = self.instance_element()
-            logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
+            self.logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
 
             element_offset = stream.tell()
             self.unpack_element(element, stream)
@@ -421,20 +418,20 @@ class RealSelectField(RealField):
         return self._field.raw
 
     def unpack(self, stream):
-        logger.debug('resolving key \'%s\'' % self._key)
+        self.logger.debug('resolving key \'%s\'' % self._key)
         field_key = getattr(self.father, self._key)
 
         key = field_key.value if field_key.value in self._mapping else RealSelectField.Type.DEFAULT
 
-        logger.debug('using key to \'%s\' (original was \'%s\')' % (key, field_key.value))
+        self.logger.debug('using key to \'%s\' (original was \'%s\')' % (key, field_key.value))
 
         field_class, args, kwargs = self._mapping[key]
         self._field = field_class(*args, **kwargs)
         self._field.father = self.father  # FIXME
-        logger.debug(f'unpacking {self._field!r}')
+        self.logger.debug(f'unpacking {self._field!r}')
 
         self._field.unpack(stream)
-        logger.debug(f'unpacked {self._field!r}')
+        self.logger.debug(f'unpacked {self._field!r}')
 
 
 class SelectField(Field):

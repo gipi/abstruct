@@ -7,10 +7,6 @@ from .properties import (
 )
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
 class Meta(object):
 
     def __init__(self):
@@ -86,7 +82,7 @@ class Chunk(metaclass=MetaChunk):
         self.logger = logging.getLogger(__name__)
 
         for name, field_constructor in self.__class__._meta.fields:
-            logger.debug('field \'%s\' initialized' % name)
+            self.logger.debug('field \'%s\' initialized' % name)
             try:
                 setattr(self, name, field_constructor(self, name=name))
             except AttributeError as e:
@@ -95,7 +91,7 @@ class Chunk(metaclass=MetaChunk):
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
         if self.stream:
-            logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
+            self.logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
             self.unpack(self.stream)
         else:
             for name, _ in self.__class__._meta.fields:
@@ -176,7 +172,7 @@ class Chunk(metaclass=MetaChunk):
         and the phase in order to pack correctly'''
         self.offset = None
         for field_name, _ in self.get_fields():
-            logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
+            self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
             field_instance.relayout()
@@ -199,20 +195,20 @@ class Chunk(metaclass=MetaChunk):
 
         count = 0
         while self.phase != ChunkPhase.DONE:
-            logger.debug('trying packing #%d' % count)
+            self.logger.debug('trying packing #%d' % count)
             for field_name, _ in self.get_fields():
-                logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
+                self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
                 field_instance = getattr(self, field_name)
 
                 if field_instance.offset:
-                    logger.debug('field %s has an offset predefined' % (field_name,))
+                    self.logger.debug('field %s has an offset predefined' % (field_name,))
                     stream.seek(field_instance.offset)
 
                 # here we need to set offset of the field since we
                 # are the parent and only us can now where to place it
                 field_instance.offset = stream.tell()
-                logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
+                self.logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
                 # we call pack() on the subchunks
                 field_instance.pack(stream=stream, relayout=False)  # we hope someone triggered the relayout before
 
@@ -240,7 +236,7 @@ class Chunk(metaclass=MetaChunk):
             2. you can enforce dependencies or not
         '''
         for field_name, _ in self.get_fields():
-            logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
+            self.logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
 
             # setup the offset for this chunk
@@ -250,7 +246,7 @@ class Chunk(metaclass=MetaChunk):
             else:
                 offset = stream.tell()
 
-            logger.debug('offset at %d' % stream.tell())
+            self.logger.debug('offset at %d' % stream.tell())
 
             field.unpack(stream)
             field.offset = offset

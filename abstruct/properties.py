@@ -47,7 +47,6 @@ class Dependency(object):
         self.expression = expression
         self.obj = obj
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
 
     def __call__(self, obj):
         return Dependency(self.expression, obj=obj)

@@ -197,7 +197,11 @@ class RealStructField(RealField):
         self.value = struct.unpack(self.get_format(), self._data)[0]
 
         if self.enum:
-            self.value = self.enum(self.value)
+            try:
+                self.value = self.enum(self.value)
+            except ValueError:
+                # TODO: maybe add an attribute to make configurable the catching of the error
+                self.logger.info('enum %s doesn\'t have element with value %d in it' % (self.enum.__class__.__name__, self.value))
 
 
 class StructField(Field):

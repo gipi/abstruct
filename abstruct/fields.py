@@ -2,9 +2,13 @@ import logging
 import struct
 from enum import Enum, Flag, auto
 
+from .enum import Compliant
 from .properties import Dependency, ChunkPhase
 from .streams import Stream
 
+
+class UnpackException(Exception):
+    pass
 
 
 class Endianess(Enum):
@@ -40,7 +44,7 @@ class Field(object):
 
 class RealField(object):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, compliant=Compliant.INHERIT, **kwargs):
         self._resolve = True  # TODO: create contextmanager
         self._phase = ChunkPhase.INIT
         self.name = name
@@ -52,6 +56,7 @@ class RealField(object):
         self.little_endian = little_endian
         self.endianess = endianess
         self.formatter = formatter if formatter else '%s'
+        self.compliant = compliant
         self.logger = logging.getLogger(__name__)
 
         #self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
@@ -191,13 +196,25 @@ class RealStructField(RealField):
 
     def unpack(self, stream):
         self._data = stream.read(self.size())
-        self.value = struct.unpack(self.get_format(), self._data)[0]
+        try:
+            self.value = struct.unpack(self.get_format(), self._data)[0]
+        except struct.error as e:
+            self.logger.error(e)
+            raise UnpackException()
 
         if self.enum:
             try:
                 self.value = self.enum(self.value)
-            except ValueError:
-                # TODO: maybe add an attribute to make configurable the catching of the error
+            except ValueError as e:
+                instance = self
+                while instance:
+                    if (instance.compliant & Compliant.ENUM):
+                        raise UnpackException()
+                    if not instance.compliant & Compliant.INHERIT:
+                        break
+
+                    instance = instance.father
+
                 self.logger.info('enum %s doesn\'t have element with value %d in it' % (self.enum.__class__.__name__, self.value))
 
 

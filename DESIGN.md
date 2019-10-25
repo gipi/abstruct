@@ -96,6 +96,18 @@ as an argument.
 The stream MUST implement the usual API for the usual stream that you can encounter
 but also a save()/restore() methods that manage the offset of the stream.
 
+## Compliantness
+
+Obviously you might find yourself with interacting with binary data that doesn't
+represent **compliant** file format and this raises a problem of how handle
+the parsing: it will raise an exception just an Enum doesn't resolve a value,
+only when a specific magic value is not found?
+
+Probably the best solution is to pass an apposite parameter (like ``compliant``)
+with some allowable values to permit such distiction.
+
+This parameter is evaluated at unpacking time and it is inherited by its children.
+
 ## APIs
 
 We'll try to describe what are the attributes and methods available an high

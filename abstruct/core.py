@@ -1,10 +1,18 @@
 import logging
 
 from .fields import *
+from .enum import Compliant
 from .streams import Stream
 from .properties import (
     get_root_from_chunk, ChunkPhase,
 )
+
+
+class ChunkUnpackException(Exception):
+
+    def __init__(self, chain):
+        self.chain = chain
+        super().__init__()
 
 
 class Meta(object):
@@ -49,7 +57,6 @@ class MetaChunk(type):
             setattr(cls, name, value)
 
 
-# TODO: add compliant() to check chunk can decode (think 32 vs 64 bit ELF)
 class Chunk(metaclass=MetaChunk):
     '''
     With Field is the main class that defines a format: its main attributes
@@ -74,11 +81,12 @@ class Chunk(metaclass=MetaChunk):
     the fields won't be found.
     '''
 
-    def __init__(self, filepath=None, father=None, offset=None, **kwargs):
+    def __init__(self, filepath=None, father=None, offset=None, compliant=Compliant.INHERIT, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
         self.offset = offset
         self.father = father
         self._phase = ChunkPhase.INIT
+        self.compliant = compliant  # TODO: use an Enum to do more fine grained control over what causes exception on unpacking
         self.logger = logging.getLogger(__name__)
 
         for name, field_constructor in self.__class__._meta.fields:
@@ -248,5 +256,10 @@ class Chunk(metaclass=MetaChunk):
 
             self.logger.debug('offset at %d' % stream.tell())
 
-            field.unpack(stream)
+            try:
+                field.unpack(stream)
+            except (UnpackException, ChunkUnpackException) as e:
+                chain = e.chain if isinstance(e, ChunkUnpackException) else []
+                chain.append(field_name)
+                raise ChunkUnpackException(chain=chain)
             field.offset = offset

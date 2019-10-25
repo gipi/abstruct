@@ -3,6 +3,7 @@ import os
 import subprocess
 import unittest
 from enum import Flag, Enum
+from .enum import Compliant
 
 
 from .executables.elf import (
@@ -37,7 +38,7 @@ from .compression.zip import (
     ZIPHeader,
 )
 
-from .core import Chunk, Meta, Dependency, ChunkPhase
+from .core import Chunk, Meta, Dependency, ChunkPhase, ChunkUnpackException
 from .streams import Stream
 from . import fields
 
@@ -456,6 +457,15 @@ class ELFTest(unittest.TestCase):
         index_section_string_table = elf.header.e_shstrndx.value
         section_string_table = elf.sections_header.value[index_section_string_table]
         print(section_string_table.pack())
+    def test_not_elf(self):
+        '''if we try to parse a stream is not an ELF what happens?'''
+        data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00'*100
+        data = b'miao' * 16
+
+        try:
+            elf = ElfFile(data, compliant=Compliant.ENUM)
+        except ChunkUnpackException as e:
+            logger.debug('error during parsing at field \'%s\'' % '.'.join(e.chain[::-1]))
 
 
 class STK500Tests(unittest.TestCase):

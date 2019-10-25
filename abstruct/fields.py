@@ -5,10 +5,7 @@ from enum import Enum, Flag, auto
 from .enum import Compliant
 from .properties import Dependency, ChunkPhase
 from .streams import Stream
-
-
-class UnpackException(Exception):
-    pass
+from .exceptions import UnpackException
 
 
 class Endianess(Enum):
@@ -44,7 +41,7 @@ class Field(object):
 
 class RealField(object):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, compliant=Compliant.INHERIT, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
         self._resolve = True  # TODO: create contextmanager
         self._phase = ChunkPhase.INIT
         self.name = name
@@ -57,6 +54,7 @@ class RealField(object):
         self.endianess = endianess
         self.formatter = formatter if formatter else '%s'
         self.compliant = compliant
+        self.is_magic = is_magic
         self.logger = logging.getLogger(__name__)
 
         #self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
@@ -99,6 +97,19 @@ class RealField(object):
             self.__dict__['_resolve'] = True  # FIXME
 
         super().__setattr__(name, value)
+
+    def is_compliant(self, level):
+        '''Returns the compliant'''
+        instance = self
+        while instance:
+            if instance.compliant & level:
+                return True
+            if not instance.compliant & Compliant.INHERIT:
+                break
+
+            instance = instance.father
+
+        return False
 
     @property
     def phase(self):
@@ -200,7 +211,7 @@ class RealStructField(RealField):
             self.value = struct.unpack(self.get_format(), self._data)[0]
         except struct.error as e:
             self.logger.error(e)
-            raise UnpackException()
+            raise UnpackException(chain=[])
 
         if self.enum:
             try:
@@ -209,13 +220,18 @@ class RealStructField(RealField):
                 instance = self
                 while instance:
                     if (instance.compliant & Compliant.ENUM):
-                        raise UnpackException()
+                        raise UnpackException(chain=[])
                     if not instance.compliant & Compliant.INHERIT:
                         break
 
                     instance = instance.father
 
-                self.logger.info('enum %s doesn\'t have element with value %d in it' % (self.enum.__class__.__name__, self.value))
+                self.logger.warning(f'enum {self.enum!r} doesn\'t have element with value 0x{self.value:x} in it')
+
+        if self.is_magic and self.value != self.default:
+            self.logger.warning(f'the magic doesn\'t correspond')
+            if self.is_compliant(Compliant.MAGIC):
+                raise MagicException(chain=[])
 
 
 class StructField(Field):

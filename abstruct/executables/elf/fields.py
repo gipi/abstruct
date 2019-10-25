@@ -9,6 +9,7 @@ import logging
 from ... import fields
 from ...core import Chunk
 from .enum import (
+    Enum,
     ElfEIClass,
     ElfEIData,
     ElfOsABI,
@@ -21,13 +22,14 @@ from .enum import (
 )
 from ...properties import Dependency
 from ...streams import Stream
+from ...exceptions import UnrecoverableException
 
 
 class ElfIdent(Chunk):
-    EI_MAG0 = fields.StructField('c', default=b'\x7f')
-    EI_MAG1 = fields.StructField('c', default=b'E')
-    EI_MAG2    = fields.StructField('c', default=b'L')
-    EI_MAG3    = fields.StructField('c', default=b'F')
+    EI_MAG0 = fields.StructField('c', default=b'\x7f', is_magic=True)
+    EI_MAG1 = fields.StructField('c', default=b'E', is_magic=True)
+    EI_MAG2    = fields.StructField('c', default=b'L', is_magic=True)
+    EI_MAG3    = fields.StructField('c', default=b'F', is_magic=True)
     EI_CLASS   = fields.StructField('B', enum=ElfEIClass, default=ElfEIClass.ELFCLASS32)  # determines the architecture
     EI_DATA    = fields.StructField('B', enum=ElfEIData, default=ElfEIData.ELFDATA2LSB)  # determines the endianess of the binary data
     EI_VERSION = fields.StructField('B', default=1)  # always 1
@@ -47,6 +49,10 @@ class RealElf_DataType(fields.RealStructField):
         super().__init__('I', **kwargs)
 
     def get_format(self):
+        if not isinstance(self._elf_class, Enum):
+            self.logger.error(f'EI_CLASS has not a value useful')
+            raise UnrecoverableException(chain=[])
+
         fmt = '%s%s' % (
             '<' if self.endianess == ElfEIData.ELFDATA2LSB else '>',
             self.MAP_CLASS_TYPE[self._elf_class],

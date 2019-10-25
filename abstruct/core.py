@@ -3,16 +3,10 @@ import logging
 from .fields import *
 from .enum import Compliant
 from .streams import Stream
+from .exceptions import AbstructException, ChunkUnpackException
 from .properties import (
     get_root_from_chunk, ChunkPhase,
 )
-
-
-class ChunkUnpackException(Exception):
-
-    def __init__(self, chain):
-        self.chain = chain
-        super().__init__()
 
 
 class Meta(object):

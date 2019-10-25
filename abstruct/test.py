@@ -38,7 +38,8 @@ from .compression.zip import (
     ZIPHeader,
 )
 
-from .core import Chunk, Meta, Dependency, ChunkPhase, ChunkUnpackException
+from .core import Chunk, Meta, Dependency, ChunkPhase
+from .exceptions import AbstructException
 from .streams import Stream
 from . import fields
 
@@ -463,9 +464,11 @@ class ELFTest(unittest.TestCase):
         data = b'miao' * 16
 
         try:
-            elf = ElfFile(data, compliant=Compliant.ENUM)
-        except ChunkUnpackException as e:
+            elf = ElfFile(data, compliant=Compliant.ENUM | Compliant.MAGIC)
+        except AbstructException as e:
             logger.debug('error during parsing at field \'%s\'' % '.'.join(e.chain[::-1]))
+
+        elf = ElfFile(data, complaint=Compliant.MAGIC)
 
 
 class STK500Tests(unittest.TestCase):

@@ -244,12 +244,13 @@ class ElfSegmentType(Enum):
     PT_NOTE    = 4
     PT_SHLIB   = 5
     PT_PHDR    = 6
+    PT_TLS     = 7
     # see <https://docs.oracle.com/cd/E19120-01/open.solaris/819-0690/chapter6-14428/index.html>
     PT_LOOS  = 0x60000000
     PT_SUNW_UNWIND = 0x6464e550
     # see <https://refspecs.linuxfoundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic.html#PROGHEADER>
     PT_SUNW_EH_FRAME = 0x6474e550
-    PT_GNU_EH_FRAME	= 0x6474e550
+    PT_GNU_EH_FRAME = 0x6474e550
     PT_GNU_STACK = 0x6474e551
     PT_GNU_RELRO = 0x6474e552
     PT_LOSUNW = 0x6ffffffa
@@ -306,6 +307,7 @@ class ElfSectionType(Enum):
     SHT_LOUSER   = 0x80000000
     SHT_HIUSER   = 0xffffffff
 
+
 class ElfSectionAttributeFlag(Enum):
     SHF_WRITE     = 0x01
     SHF_ALLOC     = 0x02
@@ -317,6 +319,8 @@ class ElfSymbolBindType(Enum):
     STB_GLOBAL = 0x01
     STB_WEAK   = 0x02
     STB_NUM    = 0x03
+    STB_LOPROC = 13
+    STB_HIPROC = 15
 
 
 class ElfSymbolType(Enum):
@@ -325,6 +329,8 @@ class ElfSymbolType(Enum):
     STT_FUNC   = 0x02
     STT_SECTION = 0x03
     STT_FILE   = 0x04
+    STT_LOPROC = 13
+    STT_HIPROC = 15
 
 
 class ElfDynamicTagType(Enum):
@@ -363,12 +369,18 @@ class ElfDynamicTagType(Enum):
     DT_PREINIT_ARRAY = 0x20
     DT_PREINIT_ARRAYSZ = 0x21
     DT_SYMTAB_SHNDX = 0x22
-    GNU_HASH    = 0x6ffffef5
-    FLAGS_1     = 0x6ffffffb
-    VERNEED     = 0x6ffffffe
-    VERNEEDNUM  = 0x6fffffff
-    VERSYM      = 0x6ffffff0
-    RELCOUNT    = 0x6ffffffa
+    DT_GNU_HASH    = 0x6ffffef5
+    DT_VERSYM      = 0x6ffffff0
+    DT_RELACOUNT   = 0x6ffffff9
+    DT_RELCOUNT    = 0x6ffffffa
+    DT_FLAGS_1     = 0x6ffffffb
+    DT_VERDEF      = 0x6ffffffc
+    DT_VERDEFNUM   = 0x6ffffffd
+    DT_VERNEED     = 0x6ffffffe
+    DT_VERNEEDNUM  = 0x6fffffff
+    OLD_DT_HIOS = 0x6fffffff
+    DT_LOPROC   = 0x70000000
+    DT_HIPROC   = 0x7fffffff
 
 
 class ElfRelocationType_i386(Enum):

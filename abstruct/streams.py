@@ -13,6 +13,7 @@ class Stream(object):
         self._type = type(obj)
         self.flags = flags # this probably need to be a more elaborate value (like mmap)
         self.obj = obj
+        self._need_close = False
         self.history = []
         self.logger = logging.getLogger(__name__)
 
@@ -26,12 +27,14 @@ class Stream(object):
         return getattr(self.obj, name)
 
     def __del__(self):
-        self.obj.close()
+        if self._need_close:
+            self.obj.close()
 
     def init_str(self):
         '''We think this is a path'''
         self.logger.debug('opening path \'%s\'' % self.obj)
         self.obj = open(self.obj, 'rb')
+        self._need_close = True
 
     def init_bytes(self):
         '''We think these are raw bytes'''

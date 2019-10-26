@@ -456,7 +456,6 @@ class RealELFSectionsField(fields.RealField):
                 section = RealSectionStringTable(size=field.sh_size.value)
                 section.unpack(stream)
                 self.value.append(section)
-                print(section.value)
             elif section_type == ElfSectionType.SHT_SYMTAB:
                 table_size = field.sh_size.value
                 self.logger.debug('unpacking symbol table')
@@ -496,7 +495,6 @@ class RealELFSectionsField(fields.RealField):
                 section.unpack(stream)
 
                 self.value.append(section)
-                print(section)
             else:
                 self.logger.debug('unpacking unhandled data of type %s' % section_type)
                 stream.seek(field.sh_offset.value)

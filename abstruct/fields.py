@@ -5,7 +5,7 @@ from enum import Enum, Flag, auto
 from .enum import Compliant
 from .properties import Dependency, ChunkPhase
 from .streams import Stream
-from .exceptions import UnpackException
+from .exceptions import UnpackException, MagicException
 
 
 class Endianess(Enum):
@@ -205,14 +205,14 @@ class RealStructField(RealField):
 
         return stream.getvalue()
 
-    def unpack(self, stream):
-        self._data = stream.read(self.size())
+    def unpack_struct(self):
         try:
             self.value = struct.unpack(self.get_format(), self._data)[0]
         except struct.error as e:
             self.logger.error(e)
             raise UnpackException(chain=[])
 
+    def unpack_enum(self):
         if self.enum:
             try:
                 self.value = self.enum(self.value)
@@ -227,6 +227,11 @@ class RealStructField(RealField):
                     instance = instance.father
 
                 self.logger.warning(f'enum {self.enum!r} doesn\'t have element with value 0x{self.value:x} in it')
+
+    def unpack(self, stream):
+        self._data = stream.read(self.size())
+        self.unpack_struct()
+        self.unpack_enum()
 
         if self.is_magic and self.value != self.default:
             self.logger.warning(f'the magic doesn\'t correspond')

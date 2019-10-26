@@ -567,8 +567,8 @@ class RealELFSegmentsField(fields.RealField):
             self.logger.debug('found segment type %s' % segment_type)
             self.logger.debug('offset: %d size: %d' % (header.p_offset.value, header.p_filesz.value))
 
-            callback_name = '_handle_unpack_%s' % segment_type.name
             try:
+                callback_name = '_handle_unpack_%s' % segment_type.name
                 callback = getattr(self, callback_name)
             except AttributeError:
                 callback = self._handle_unpack_undefined

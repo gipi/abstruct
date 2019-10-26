@@ -57,7 +57,7 @@ class RealField(object):
         self.is_magic = is_magic
         self.logger = logging.getLogger(__name__)
 
-        #self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
+        # self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
 
     def init(self):
         # here we probably need to initialize the default

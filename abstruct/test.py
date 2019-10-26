@@ -460,7 +460,7 @@ class ELFTest(unittest.TestCase):
         print(section_string_table.pack())
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''
-        data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00'*100
+        data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
         data = b'miao' * 16
 
         try:

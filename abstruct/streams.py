@@ -8,10 +8,11 @@ class Stream(object):
     '''This is a simple wrapper around String/File object to
     uniform its properties: mainly we need to have a seek() method
     that handles correctly Offset() instances.'''
+
     def __init__(self, obj, flags='r'):
         '''Here we normalize the object in order to be accessed as a normal file object'''
         self._type = type(obj)
-        self.flags = flags # this probably need to be a more elaborate value (like mmap)
+        self.flags = flags  # this probably need to be a more elaborate value (like mmap)
         self.obj = obj
         self._need_close = False
         self.history = []

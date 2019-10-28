@@ -44,9 +44,8 @@ from .streams import Stream
 from . import fields
 
 
-logging.basicConfig()
+logging.basicConfig(level=logging.DEBUG if 'DEBUG' in os.environ else logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class StreamTests(unittest.TestCase):

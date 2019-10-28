@@ -30,7 +30,8 @@ class MetaChunk(type):
 
         real_name = '%sField' % new_cls.__name__
 
-        logger.debug('creating class \'%s\'' % real_name)
+        cls.logger = logging.getLogger(__name__)
+        cls.logger.debug('creating class \'%s\'' % real_name)
 
         ChunkClass = type(real_name, (Field,), {})
         ChunkClass.real = new_cls
@@ -45,7 +46,7 @@ class MetaChunk(type):
 
     def add_to_class(cls, name, value):
         if hasattr(value, 'contribute_to_chunk'):
-            logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
+            cls.logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
             value.contribute_to_chunk(cls, name)
         else:
             setattr(cls, name, value)

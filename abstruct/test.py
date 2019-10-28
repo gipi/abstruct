@@ -21,8 +21,6 @@ from .images.png import (
     PNGColorType,
     PNGHeader,
     PNGFile,
-    IHDRData,
-    PLTEEntry,
 )
 
 from .communications.stk500 import (

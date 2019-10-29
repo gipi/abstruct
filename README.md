@@ -33,6 +33,11 @@ The API will be change very heavily in future, I'm in the design phase. It uses 
      - [ ] read ``ELF`` sections data
      - [x] read ``ELF`` segments header
      - [ ] read ``ELF`` segments data
+     - [ ] resolve architecture dependent data
+       - [ ] i386
+       - [ ] x86_64
+       - [ ] mips
+       - [ ] arm
  - [ ] Add uncommon formats
    - [ ] QR-Code (this is the encoding of binary data using images, the opposite of a format like ``PNG``)
  - [ ] core functionalities

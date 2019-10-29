@@ -10,6 +10,7 @@ from ... import fields
 from ...core import Chunk
 from .enum import (
     Enum,
+    ElfMachine,
     ElfEIClass,
     ElfEIData,
     ElfOsABI,
@@ -18,7 +19,6 @@ from .enum import (
     ElfSymbolBindType,
     ElfSymbolType,
     ElfDynamicTagType,
-    ElfRelocationType_i386,
 )
 from ...properties import Dependency
 from ...streams import Stream
@@ -216,11 +216,22 @@ class RealElfRelocationInfoField(RealElf_Sword):
     def __repr__(self):
         return f'<{self.__class__.__name__}(sym={self.sym}, type={self.type})'
 
+    def get_relocation_type_class(self):
+        from . import reloc
+        self._arch = Dependency('@ElfFile.header.e_machine')
+        return {
+            ElfMachine.EM_386: reloc.ElfRelocationType_i386,
+        }[self._arch]
+
+    def get_relocation_type(self):
+        '''The relocation type is HIGHLY dependent on architecture'''
+        return self.get_relocation_type_class()(self.value & 0xff)
+
     def unpack(self, stream):
         super().unpack(stream)
 
         self.sym  = self.value >> 8
-        self.type = ElfRelocationType_i386(self.value & 0xff)
+        self.type = self.get_relocation_type()
 
 
 class ElfRelocationInfoField(fields.StructField):

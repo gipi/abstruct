@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 '''
-Reimplementation of the find(1) utilities but for file format. For now
-it works only for ELF files but should not be too difficult to generalize.
+Reimplementation of the find(1) utilities but for file format.
 
 TODO: implement common option such as
        - do not follow symlink
 '''
 import os
 import sys
+import importlib
 import logging
 from pathlib import Path
 from enum import Enum
@@ -21,13 +21,22 @@ logger = logging.getLogger(__name__)
 
 
 def usage(progname):
-    print(f'usage: {progname} [condition] [files...]')
+    print(f'''usage: {progname} [namespace] [object] [condition] [paths...]
+
+The condition parameter can use the namespace by the variable "ns" and the parsed
+object by the variable "obj". The path must be a directory.
+
+For example
+
+ $ find.py abstruct.executables.elf ElfFile obj.header.e_machine.value==ns.enum.ElfMachine.EM_386 /
+
+will find all the ELF executables that target the i386 architecture.''')
     sys.exit(1)
 
 
-def parse_file(path):
+def parse_file(cls, path):
     try:
-        victim = elf.ElfFile(path, compliant=Compliant.MAGIC)
+        victim = cls(path, compliant=Compliant.MAGIC)
     except (MagicException, FileNotFoundError, PermissionError, ChunkUnpackException, OSError):
         return None
     except Exception as e:
@@ -38,13 +47,18 @@ def parse_file(path):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 5:
         usage(sys.argv[0])
 
-    lhs, rhs = sys.argv[1].split('=')
-    components = lhs.split('.')
-    rhs = int(rhs)
-    paths = sys.argv[2:]
+    ns = sys.argv[1]
+    obj_name = sys.argv[2]
+
+    ns = importlib.import_module(ns)
+
+    conditions = sys.argv[3]
+    paths = sys.argv[4:]
+
+    cls = getattr(ns, obj_name)
 
     for basepath in paths:
         for path in Path(basepath).glob('**/*'):
@@ -53,14 +67,11 @@ if __name__ == '__main__':
             path = str(path.resolve())  # FIXME: in this way resolve symlinks and could be a problem
             logger.debug(path)
 
-            victim = parse_file(path)
+            obj = parse_file(cls, path)
 
-            if not victim:
+            if not obj:
                 continue
 
-            for component in components:
-                victim = getattr(victim, component)
-
-            value = victim.value if not isinstance(victim.value, Enum) else victim.value.value
-            if value == rhs:
+            code = compile(conditions, 'string', 'exec')
+            if eval(code):
                 print(path)

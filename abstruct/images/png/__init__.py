@@ -82,31 +82,16 @@ class PNGHeader(Chunk):
     magic = fields.StringField(8, default=b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a', is_magic=True)
 
 
-class RealPNGIDAT(fields.RealStringField):
-    '''In a PNG file, the concatenation of the contents of all the IDAT chunks makes up a zlib datastream,
-    the boundaries between IDAT chunks are arbitrary and can fall anywhere in the zlib datastream.
-    '''
-
-    def miao_get_value(self):
-        if not self._value:
-            return b''
-        import zlib
-
-        return zlib.decompress(self._value)
-
-
 type2field = {
     b'IHDR': (IHDRData, (), {}),
     b'PLTE': (fields.RealArrayField, (PLTEEntry,), {'n': RatioDependency(3, '.length')}),
-    b'IDAT': (RealPNGIDAT, (Dependency('.length'),), {}),
     b'gAMA': (fields.RealStringField, (Dependency('.length'),), {}),
     fields.RealSelectField.Type.DEFAULT: (fields.RealStringField, (Dependency('.length'),), {}),
 }
 
 
 class PNGChunk(Chunk):
-    '''
-    This is the main data structure of the format: the 4 fields represent
+    '''This is the main data structure of the format: the 4 fields represent
     a chunk into the file. Each field is intended big-endian.
 
     A chunk is defined as critical or ancillary depending on the case of the

@@ -79,7 +79,7 @@ class PLTEEntry(Chunk):
 
 
 class PNGHeader(Chunk):
-    magic = fields.StringField(8, default=b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a')
+    magic = fields.StringField(8, default=b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a', is_magic=True)
 
 
 class RealPNGIDAT(fields.RealStringField):
@@ -87,7 +87,7 @@ class RealPNGIDAT(fields.RealStringField):
     the boundaries between IDAT chunks are arbitrary and can fall anywhere in the zlib datastream.
     '''
 
-    def _get_value(self):
+    def miao_get_value(self):
         if not self._value:
             return b''
         import zlib

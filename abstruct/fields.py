@@ -279,6 +279,9 @@ class RealStringField(RealField):
     def unpack(self, stream):
         self.value = stream.read(self.n)
 
+        if self.is_magic and self.value != self.default:
+            raise MagicException(chain=None)
+
 
 class StringField(Field):
     '''This in an array of "n" char'''

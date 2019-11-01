@@ -91,6 +91,30 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(isinstance(d.field, fields.RealStructField))
         self.assertEqual(len(d2._meta.fields), 1)
 
+    def test_inheritance(self):
+        '''subclasses inherit fields'''
+        class Father(Chunk):
+            field_a = fields.StringField(0x10)
+            field_b = fields.StructField("I")
+
+        class Son(Father):
+            field_c = fields.StringField(0x08)
+
+        field_b_value = b'\x01\x02\x03\x04'
+        field_c_value = b'ABCDEFGH'
+        son = Son(b'A' * 16 + field_b_value + field_c_value)
+
+        fields_son = son.get_fields()
+
+        self.assertEqual(len(fields_son), 3)
+        self.assertEqual([_[0] for _ in fields_son], [
+            'field_a', 'field_b', 'field_c',
+        ])
+
+        # check values make sense
+        self.assertEqual(son.field_b.value, 0x04030201, f'field_b is {son.field_b.value:x}')
+        self.assertEqual(son.field_c.value, field_c_value)
+
     def test_chunk(self):
         class Dummy(Chunk):
             field = fields.StructField('i')

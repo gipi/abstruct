@@ -18,9 +18,16 @@ class Meta(object):
 class MetaChunk(type):
 
     def __new__(cls, names, bases, attrs):
+        '''All of this is a big hack, maybe too inspired by how Django does a similar thing!'''
         new_cls = super(MetaChunk, cls).__new__(cls, names, bases, {})
 
         new_cls._meta = Meta()
+
+        # handle inheritance
+        parents = [_ for _ in bases if isinstance(_, MetaChunk)]
+        for parent in parents:
+            for obj_name, obj in parent._meta.fields:
+                new_cls.add_to_class(obj_name, obj)
 
         for obj_name, obj in attrs.items():
             new_cls.add_to_class(obj_name, obj)

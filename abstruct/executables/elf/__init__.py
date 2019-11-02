@@ -38,7 +38,7 @@ class ElfHeader(Chunk):
     e_phoff     = elf_fields.Elf_Off()
     e_shoff     = elf_fields.Elf_Off()
     e_flags     = elf_fields.Elf_Word()
-    e_ehsize    = elf_fields.Elf_Half(equals_to=Dependency('size'))
+    e_ehsize    = elf_fields.Elf_Half(equals_to=Dependency('.size'))
     e_phentsize = elf_fields.Elf_Half()
     e_phnum     = elf_fields.Elf_Half()
     e_shentsize = elf_fields.Elf_Half()

@@ -131,7 +131,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(d.dummy.field.phase, ChunkPhase.INIT)
 
     def test_offset_basic(self):
-        '''Test that the offset is handled correctly'''
+        '''Test that the offset is handled correctly in basic case'''
         class Dummy(Chunk):
             field1 = fields.StringField(0x2)
             field2 = fields.StringField(0x3)
@@ -173,12 +173,16 @@ class CoreTests(unittest.TestCase):
         tlv.data.value = b'\x42\x42\x42'
         tlv.relayout()  # we must trigger relayouting
         tlv.pack()
+        # type
         self.assertEqual(tlv.type.value, 0x01)
         self.assertEqual(tlv.type.offset, 0x00)
+        # length
         self.assertEqual(tlv.length.value, 0x03)
         self.assertEqual(tlv.length.offset, 0x04)
+        # data
         self.assertEqual(tlv.data.value, b'\x42' * 0x03)
         self.assertEqual(tlv.data.offset, 0x04 + 0x04)
+        # extra
         self.assertEqual(tlv.extra.value, 0x0d0c0b0a)
         self.assertEqual(tlv.extra.offset, 0x04 + 0x04 + 0x03)
 
@@ -200,6 +204,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(repacked_contents, contents)
 
     def test_packing_w_offset(self):
+        '''check correctness packing when offset is indicated explicitely by a field'''
         class Dummy(Chunk):
             '''this format has 16 bytes located at the offset
             indicated in the first field'''

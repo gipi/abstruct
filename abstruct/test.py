@@ -414,7 +414,9 @@ class ELFTest(unittest.TestCase):
         elf = ElfFile()
         str_header = SectionHeader(father=elf)
         str_header.sh_type.value = ElfSectionType.SHT_STRTAB
-        elf.sections_header.value.append(str_header)
+        elf.sections_header.append(str_header)
+
+        self.assertEqual(elf.header.e_shnum.value, 1)
         with open('/tmp/minimal', 'wb') as f:
             f.write(elf.pack())
 

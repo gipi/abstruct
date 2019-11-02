@@ -190,7 +190,38 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
         self.assertEqual(ElfEIClass.ELFCLASS64.name, 'ELFCLASS64')
 
-    def test_packing(self):
+    def test_relayout(self):
+        '''we want relayout'''
+        class Dummy(Chunk):
+            a = fields.StructField('I')
+            b = fields.StructField('H')
+
+        class Father(Chunk):
+            dummy = fields.DummyField()
+            c     = fields.StringField(0x10)
+
+        father = Father()
+
+        father.dummy.a.value = 0xcafebabe
+        father.dummy.b.value = 0x1dea
+        father.c.value       = "A" * 10
+
+        # before the relayout the offsets are not defined
+        self.assertEqual(father.offset, None)
+        self.assertEqual(father.dummy.offset, None)
+        self.assertEqual(father.dummy.a.offset, None)
+        self.assertEqual(father.dummy.b.offset, None)
+        self.assertEqual(father.c.offset, None)
+
+        # try to relayout all the world
+        father.relayout()
+        self.assertEqual(father.offset, 0)
+        self.assertEqual(father.dummy.offset, 0)
+        self.assertEqual(father.dummy.a.offset, 0)
+        self.assertEqual(father.dummy.b.offset, 4)
+        self.assertEqual(father.c.offset, 6)
+
+    def test_unpacking_and_packing(self):
         class Dummy(Chunk):
             fieldA = fields.StructField('I')
             fieldB = fields.StructField('I')
@@ -213,7 +244,8 @@ class CoreTests(unittest.TestCase):
 
         dummy = Dummy()
 
-        # try to insert some values an then packing
+        # try to insert some values an then packing (w implicit relayouting)
+        # I'm expecting to see the minimal offset (i.e. 4 bytes)
         dummy.data.value = b'\x41' * 0x10
         packed_contents = dummy.pack()
 
@@ -221,29 +253,29 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(dummy.off.value, 0x04)
         self.assertEqual(
             packed_contents,
-            b'\x0a\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+            b'\x04\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
         )
-        # try to insert some values an then packing
+        # try to indicate explicitely the offset an then packing (wo relayouting)
         dummy.off.value = 0x0a
 
         # dummy.data.offset = 0x0a
-        packed_contents = dummy.pack()
+        packed_contents = dummy.pack(relayout=False)
 
-        # i'm expecting to see the AAAAs starting at offset 4
-        self.assertEqual(dummy.off.value, 0x04)
-        self.assertEqual(
-            packed_contents,
-            b'\x0a\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
-        )
-
-        # now we don't want a compliant file
-        packed_contents = dummy.pack()
-        dummy.off.value = 0x0a
         # i'm expecting to see the AAAAs starting at offset 10
         self.assertEqual(dummy.off.value, 0x0a)
         self.assertEqual(
             packed_contents,
             b'\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
+        )
+
+        # now we want a compliant file
+        dummy.off.value = 0x0a
+        packed_contents = dummy.pack()
+        # i'm expecting to see the AAAAs starting at offset 10
+        self.assertEqual(dummy.off.value, 0x04)
+        self.assertEqual(
+            packed_contents,
+            b'\x04\x00\x00\x00\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41\x41'
         )
 
 

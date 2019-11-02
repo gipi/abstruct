@@ -140,13 +140,18 @@ class RealField(object):
         fget=lambda self: self._get_value(),
         fset=lambda self, value: self._set_value(value))
 
-    def relayout(self):
+    def relayout(self, offset=0):
+        '''
         self._resolve = False  # we don't want the automagical resolution
         if not isinstance(self.offset, Dependency):
             self.offset = None
             self._phase = ChunkPhase.PROGRESS
 
         self._resolve = True
+        '''
+        self.offset = offset
+
+        return self.size()
 
     def _update_value(self):
         '''This is used to update the binary value before packing'''
@@ -350,33 +355,20 @@ class RealArrayField(RealField):
     def setn(self, n):
         self.n = n
 
-    def relayout(self):
-        super().relayout()
+    def relayout(self, offset=0):
+        super().relayout(offset=offset)
         for field in self.value:
-            field.relayout()
+            offset += field.relayout(offset=offset)
 
-    @property
-    def phase(self):
-        for field in self.value:
-            if field.phase == ChunkPhase.PROGRESS:
-                return ChunkPhase.PROGRESS
-
-        return ChunkPhase.DONE
+        return offset
 
     def pack(self, stream=None, relayout=True):
         data = b''
         if relayout:
             self.relayout()
 
-        count = 0
-        while self.phase != ChunkPhase.DONE:
-            for field in self.value:
-                field.pack(stream=stream, relayout=False)
-                field.offset = stream.tell()
-
-            count += 1
-            if count > 5:
-                raise ValueError('relayouting error for class %s' % self.__class__.__name__)
+        for field in self.value:
+            data += field.pack(stream=stream, relayout=False)
 
         return data  # FIXME
 

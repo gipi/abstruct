@@ -85,7 +85,7 @@ class Chunk(metaclass=MetaChunk):
 
     def __init__(self, filepath=None, father=None, offset=None, compliant=Compliant.INHERIT, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
-        self.offset = offset
+        self.offset = offset  # can be None, an integer or a Dependency
         self.father = father
         self._phase = ChunkPhase.INIT
         self.compliant = compliant  # TODO: use an Enum to do more fine grained control over what causes exception on unpacking
@@ -177,15 +177,20 @@ class Chunk(metaclass=MetaChunk):
 
         return value
 
-    def relayout(self):
-        '''This method triggers the chunk and its children to reset the offsets
-        and the phase in order to pack correctly'''
-        self.offset = None
+    def relayout(self, offset=0):
+        '''This method triggers the chunk's children to reset the offsets
+        and the phase in order to pack correctly.
+
+        In practice it's like packing() but it's only interested in the sizes
+        of the chunks.'''
+        self.offset = offset
         for field_name, _ in self.get_fields():
-            self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
+            self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
-            field_instance.relayout()
+            offset += field_instance.relayout(offset=offset)
+
+        return offset
 
     def pack(self, stream=None, relayout=True):
         '''
@@ -203,28 +208,19 @@ class Chunk(metaclass=MetaChunk):
 
         stream = Stream(b'') if not stream else stream
 
-        count = 0
-        while self.phase != ChunkPhase.DONE:
-            self.logger.debug('trying packing #%d' % count)
-            for field_name, _ in self.get_fields():
-                self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
+        for field_name, _ in self.get_fields():
+            self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
-                field_instance = getattr(self, field_name)
+            field_instance = getattr(self, field_name)
 
-                if field_instance.offset:
-                    self.logger.debug('field %s has an offset predefined' % (field_name,))
-                    stream.seek(field_instance.offset)
+            if field_instance.offset is None:
+                raise AttributeError(f'offset for field named "{field_name}" {field_instance!r} is not defined!')
 
-                # here we need to set offset of the field since we
-                # are the parent and only us can now where to place it
-                field_instance.offset = stream.tell()
-                self.logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
-                # we call pack() on the subchunks
-                field_instance.pack(stream=stream, relayout=False)  # we hope someone triggered the relayout before
+            stream.seek(field_instance.offset)
 
-            count += 1
-            if count > 5:
-                raise ValueError('relayouting failed for instance of class %s' % self.__class__.__name__)
+            self.logger.debug('field %s set at offset %08x' % (field_name, field_instance.offset))
+            # we call pack() on the subchunks
+            field_instance.pack(stream=stream, relayout=False)  # we hope someone triggered the relayout before
 
         return stream.obj.getvalue()
 

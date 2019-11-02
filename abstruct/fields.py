@@ -380,6 +380,7 @@ class RealArrayField(RealField):
 
     def append(self, element):
         self.value.append(element)
+        self.n = len(self.value)
 
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,

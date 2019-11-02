@@ -33,7 +33,7 @@ from .common.crc import (
 )
 
 from .compression.zip import (
-    ZIPHeader,
+    ZIPLocalFileHeader,
 )
 
 from .core import Chunk, Meta, Dependency, ChunkPhase
@@ -539,6 +539,6 @@ class ZIPTests(unittest.TestCase):
     def test_minimal(self):
         path_minimal = os.path.join(os.path.dirname(__file__), '..', 'extra', 'minimal.zip')
 
-        zp = ZIPHeader(path_minimal)
+        zp = ZIPLocalFileHeader(path_minimal)
 
-        print(zp)
+        self.assertEqual(zp.filename.value, b"a/b")

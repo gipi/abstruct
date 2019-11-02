@@ -54,8 +54,20 @@ class ZIPCompressionMethod(Flag):
     PPMd                = 98
 
 
-class ZIPHeader(Chunk):
-    signature         = fields.StringField(0x4, default=b'PK\x03\x04')
+class ZIPEndOfCentralDirectory(Chunk):
+    signature        = fields.StringField(0x04, default=b'PK\x05\x06', is_magic=True)
+    n_disk           = fields.StructField('H')
+    n_disk_w_start   = fields.StructField('H')
+    n_entry          = fields.StructField('H')
+    central_dir      = fields.StructField('H')
+    size_central_dir = fields.StructField('I')
+    off              = fields.StructField('I')
+    comment_length   = fields.StructField('H')
+    comment          = fields.StringField(Dependency('comment_length'))
+
+
+class ZIPLocalFileHeader(Chunk):
+    signature         = fields.StringField(0x4, default=b'PK\x03\x04', is_magic=True)
     version           = fields.StructField('H')
     flags             = fields.StructField('H', enum=ZIPFlags)
     compression       = fields.StructField('H', enum=ZIPCompressionMethod)
@@ -68,3 +80,58 @@ class ZIPHeader(Chunk):
     extra_length      = fields.StructField('H')
     filename          = fields.StringField(Dependency('filename_length'))
     extra_field       = fields.StringField(Dependency('extra_length'))
+
+
+class ZIPCentralDirectoryHeader(Chunk):
+    signature                = fields.StringField(0x4, default=b'PK\x01\x02')
+    version_by               = fields.StructField('H')
+    version_needed           = fields.StructField('H')
+    flags                    = fields.StructField('H')
+    compression_method       = fields.StructField('H')
+    last_modification_time   = fields.StructField('H')
+    last_modification_date   = fields.StructField('H')
+    crc_32                   = fields.StructField('I')  # TODO: use CRC field
+    compressed_size          = fields.StructField('H')
+    uncompressed_size        = fields.StructField('H')
+    filename_length          = fields.StructField('H')
+    extra_length             = fields.StructField('H')
+    comment_length           = fields.StructField('H')
+    internal_file_attributes = fields.StructField('H')
+    external_file_attributes = fields.StructField('I')
+    relative_offset          = fields.StructField('I')
+    filename                 = fields.StringField(Dependency('filename_length'))
+    extra                    = fields.StringField(Dependency('extra_length'))
+    comment                  = fields.StringField(Dependency('comment_length'))
+
+
+class ZIPSignature(Chunk):
+    signature = fields.StringField(0x4, default=b'PK\x05\x05', is_magic=True)
+    size_of_data = fields.StructField('H')
+    data         = fields.StringField(Dependency('size_of_data'))
+
+
+class ZIPFile(Chunk):
+    '''4.3.6 Overall .ZIP file format:
+
+      [local file header 1]
+      [encryption header 1]
+      [file data 1]
+      [data descriptor 1]
+      .
+      .
+      .
+      [local file header n]
+      [encryption header n]
+      [file data n]
+      [data descriptor n]
+      [archive decryption header]
+      [archive extra data record]
+      [central directory header 1]
+      .
+      .
+      .
+      [central directory header n]
+      [zip64 end of central directory record]
+      [zip64 end of central directory locator]
+      [end of central directory record]
+    '''

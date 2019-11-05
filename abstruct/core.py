@@ -19,7 +19,15 @@ class MetaChunk(type):
 
     def __new__(cls, names, bases, attrs):
         '''All of this is a big hack, maybe too inspired by how Django does a similar thing!'''
-        new_cls = super(MetaChunk, cls).__new__(cls, names, bases, {})
+        module = attrs.pop('__module__')
+        classcell = attrs.pop('__classcell__', None)
+
+        new_attrs = {
+            '__module__': module,
+        }
+        if classcell is not None:
+            new_attrs['__classcell__'] = classcell
+        new_cls = super(MetaChunk, cls).__new__(cls, names, bases, new_attrs)
 
         new_cls._meta = Meta()
 

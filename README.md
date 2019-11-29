@@ -38,6 +38,7 @@ The API will be change very heavily in future, I'm in the design phase. It uses 
        - [ ] x86_64
        - [ ] mips
        - [ ] arm
+     - [ ] PE
  - [ ] Add uncommon formats
    - [ ] QR-Code (this is the encoding of binary data using images, the opposite of a format like ``PNG``)
  - [ ] core functionalities

@@ -61,7 +61,7 @@ class FieldBase(object):
 
 class Field(FieldBase):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
         super().__init__()
         self._resolve = True  # TODO: create contextmanager
         self.name = name
@@ -70,7 +70,6 @@ class Field(FieldBase):
         self.offset = offset
         self._value = None
         self._data = None
-        self.little_endian = little_endian
         self.endianess = endianess
         self.compliant = compliant
         self.is_magic = is_magic
@@ -208,7 +207,7 @@ class StructField(Field):
         return formatter % (self.value if not self.enum else self.value.value,)
 
     def get_format(self):
-        return '%s%s' % ('<' if self.little_endian else '>', self.format)
+        return '%s%s' % ('<' if self.endianess == Endianess.LITTLE_ENDIAN else '>', self.format)
 
     def size(self):
         return struct.calcsize(self.get_format())

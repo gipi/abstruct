@@ -47,10 +47,6 @@ class FieldDescriptor(object):
 
 class FieldBase(object):
 
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
     def contribute_to_chunk(self, cls, name):
         if not getattr(cls, name, None):
             setattr(cls, name, FieldDescriptor(self, name))
@@ -66,7 +62,7 @@ class FieldBase(object):
 class Field(FieldBase):
 
     def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
-        super().__init__(*args, name=name, father=father, default=default, offset=offset, endianess=endianess, compliant=compliant, is_magic=is_magic, **kwargs)
+        super().__init__()
         self._resolve = True  # TODO: create contextmanager
         self.name = name
         self.father = father
@@ -196,7 +192,7 @@ class Field(FieldBase):
 class StructField(Field):
 
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
-        super().__init__(format, default=default if not equals_to else equals_to, **kw)
+        super().__init__(default=default if not equals_to else equals_to, **kw)
         self.format = format
         self.enum = enum
 
@@ -272,8 +268,8 @@ class StructField(Field):
 class StringField(Field):
 
     def __init__(self, n=0, **kw):
-        super().__init__(**kw)
         self.n = n
+        super().__init__(**kw)
 
     def __repr__(self):
         return '<%s(%s)>' % (self.__class__.__name__, repr(self.value))

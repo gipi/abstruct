@@ -12,8 +12,8 @@ from zlib import crc32
 class CRCField(fields.StructField):
 
     def __init__(self, fields, *args, **kwargs):
-        self.fields = fields
         super().__init__('I', *args, **kwargs)
+        self.fields = fields
 
     def calculate(self):
         value = b''

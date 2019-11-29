@@ -107,7 +107,7 @@ class CoreTests(unittest.TestCase):
         fields_son = son.get_fields()
 
         self.assertEqual(len(fields_son), 3)
-        self.assertEqual([_[0] for _ in fields_son], [
+        self.assertEqual([_ for _ in fields_son], [
             'field_a', 'field_b', 'field_c',
         ])
 

@@ -34,8 +34,10 @@ class MetaChunk(type):
         # handle inheritance
         parents = [_ for _ in bases if isinstance(_, MetaChunk)]
         for parent in parents:
-            for obj_name, obj in parent._meta.fields:
-                new_cls.add_to_class(obj_name, obj)
+            for obj_name in parent._meta.fields:
+                obj = parent.__dict__[obj_name]
+                setattr(new_cls, obj_name, obj)
+                new_cls._meta.fields.append(obj_name)
 
         for obj_name, obj in attrs.items():
             new_cls.add_to_class(obj_name, obj)

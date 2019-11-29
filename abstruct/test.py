@@ -115,7 +115,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(son.field_b.value, 0x04030201, f'field_b is {son.field_b.value:x}')
         self.assertEqual(son.field_c.value, field_c_value)
 
-    def test_chunk(self):
+    def test_field_from_chunk(self):
         class Dummy(Chunk):
             field = fields.StructField('i')
 

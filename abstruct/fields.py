@@ -110,7 +110,7 @@ class Field(FieldBase):
             field = super().__getattribute__(name)
             self.__dict__['_resolve'] = True
             if isinstance(field, Dependency):
-                self.logger.debug('set for field \'%s\' the value \'%s\'depends on' % (name, value))
+                self.logger.debug('set for field \'%s\' the value \'%s\' depends on' % (name, value))
                 real_field = field.resolve_field(self)
                 real_field.value = value
                 return

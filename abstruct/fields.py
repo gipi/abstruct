@@ -311,12 +311,15 @@ class RealArrayField(RealField):
     You can indicate an explicite number of elements via the parameter named "n"
     or you can indicate with a callable returning True which element is the terminator
     for the list via the parameter named "canary".
+
+    default_cls can be a single (args, kwargs) for item or a list
     '''
 
-    def __init__(self, field_cls, n=None, canary=None, **kw):
+    def __init__(self, field_cls, n=0, canary=None, default_cls=None, **kw):
         self.field_cls = field_cls
-        self.n = n
+        self._n = n
         self._canary = canary
+        self.default_cls = default_cls
 
         if n and not (isinstance(n, Dependency) or isinstance(n, int)):
             raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
@@ -324,7 +327,7 @@ class RealArrayField(RealField):
         if 'default' not in kw:
             kw['default'] = []
             if isinstance(n, int) and n > 0:
-                kw['default'] = [self.field_cls()] * self.n
+                kw['default'] = [self.field_cls()] * n
 
         super().__init__(**kw)
 
@@ -333,6 +336,10 @@ class RealArrayField(RealField):
 
     def __len__(self):
         return len(self.value)
+
+    def _set_value(self, value):
+        super()._set_value(value)
+        self._n = len(self.value)
 
     def count(self):
         return self.n
@@ -352,8 +359,15 @@ class RealArrayField(RealField):
 
         return size
 
-    def setn(self, n):
-        self.n = n
+    @property
+    def n(self):
+        return self._n
+
+    @n.setter
+    def set_n(self, n):
+        import pdb; pdb.set_trace()
+        old_n = self._n
+        self._n = n
 
     def relayout(self, offset=0):
         super().relayout(offset=offset)
@@ -380,7 +394,7 @@ class RealArrayField(RealField):
 
     def append(self, element):
         self.value.append(element)
-        self.n = len(self.value)
+        self._n = len(self.value)
 
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,

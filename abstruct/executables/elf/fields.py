@@ -331,6 +331,20 @@ class RealElfDynamicSegmentField(fields.RealArrayField):
 
         return string_table.get(entry.d_un.value)
 
+    def _resolve_entry_DT_SYMTAB_(self, entry, elf):
+        symbol_table_addr = self[ElfDynamicTagType.DT_SYMTAB].d_un_value
+        symbol_table_entry_size = self[ElfDynamicTagType.DT_SYMENT].d_un.value
+
+        raw = segment.raw
+        offset = symbol_table_addr - segment.vaddr
+
+        symbol_table = ElfRelocationTable(size=rel_table_size, father=self.father)
+        stream = Stream(raw)
+        stream.seek(offset)
+        symbol_table.unpack(stream)
+
+        return symbol_table
+
     def _resolve_entry_DT_REL(self, entry, elf):
         from .reloc import ElfRelocationTable
         rel_table_addr = self[ElfDynamicTagType.DT_REL].d_un.value

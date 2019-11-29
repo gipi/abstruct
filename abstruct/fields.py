@@ -91,6 +91,11 @@ class RealField(object):
                 real_field = field.resolve_field(self)
                 real_field.value = value
                 return
+
+            # try to see if is a property
+            field = getattr(self.__class__, name, None)
+            if isinstance(field, property) and field.fset is not None:
+                field.fset(self, value)
         except AttributeError:
             pass
         finally:

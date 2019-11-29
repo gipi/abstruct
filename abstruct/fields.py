@@ -340,9 +340,6 @@ class ArrayField(Field):
         super()._set_value(value)
         self._n = len(self.value)
 
-    def count(self):
-        return self.n
-
     @property
     def raw(self):
         value = b''

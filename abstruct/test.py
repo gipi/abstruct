@@ -37,7 +37,7 @@ from .compression.zip import (
 )
 
 from .core import Chunk, Meta, Dependency, ChunkPhase
-from .exceptions import AbstructException
+from .exceptions import AbstructException, MagicException
 from .streams import Stream
 from . import fields
 
@@ -523,6 +523,15 @@ class ELFTest(unittest.TestCase):
         data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
         data = b'miao' * 16
 
+        empty_success = False
+        try:
+            ElfFile(data_empty)
+        except MagicException as e:
+            empty_success = True
+        except Exception as e:
+            logger.error(e)
+
+        self.assertTrue(empty_success)
         try:
             elf = ElfFile(data, compliant=Compliant.ENUM | Compliant.MAGIC)
         except AbstructException as e:

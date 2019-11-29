@@ -269,3 +269,10 @@ class Chunk(metaclass=MetaChunk):
                 chain.append(field_name)
                 raise ChunkUnpackException(chain=chain)
             field.offset = offset
+
+        if hasattr(self, 'validate'):
+            ret = self.validate()
+            if not ret:
+                self.logger.warning(f'magic for field \'{self.name}\' failed')
+                if self.compliant & Compliant.MAGIC:
+                    raise MagicException(chain=[])

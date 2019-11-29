@@ -37,6 +37,9 @@ class ElfIdent(Chunk):
     EI_ABIVERSION = fields.StructField('B')
     EI_PAD     = fields.StringField(7)
 
+    def check_magic(self):
+        return self.EI_MAG0.value == b'\x7f' or self.EI_MAG1.value == b'E' or self.EI_MAG2.value == b'L' or self.EI_MAG3.value == b'F'
+
 
 # TODO: create BoolFromDependency that use the EI_CLASS from the ELF header
 #       and generates the endianess to pass via the little_endian parameter.

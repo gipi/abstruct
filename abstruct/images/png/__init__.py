@@ -116,5 +116,5 @@ class PNGChunk(Chunk):
 
 
 class PNGFile(Chunk):
-    header = fields.PNGHeaderField()
+    header = PNGHeader()
     chunks = fields.ArrayField(PNGChunk, canary=lambda x: x.type.value == b'IEND')

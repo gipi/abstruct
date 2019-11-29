@@ -120,7 +120,7 @@ class CoreTests(unittest.TestCase):
             field = fields.StructField('i')
 
         class DummyContainer(Chunk):
-            dummy = fields.DummyField()
+            dummy = Dummy()
 
         d = DummyContainer()
 
@@ -194,7 +194,7 @@ class CoreTests(unittest.TestCase):
             b = fields.StructField('H')
 
         class Father(Chunk):
-            dummy = fields.DummyField()
+            dummy = Dummy()
             c     = fields.StringField(0x10)
 
         father = Father()

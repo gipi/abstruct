@@ -228,8 +228,7 @@ class SymbolTableEntry(Chunk):
 
     def get_fields(self):  # TODO: factorize this code in more pythonic way
         original_fields = super().get_fields()
-        # FIXME: here we need to call resolve() by ourself since it's not a field
-        if self._elf_class.resolve(self) == ElfEIClass.ELFCLASS32:
+        if self._elf_class == ElfEIClass.ELFCLASS32:
             return original_fields
 
         ORDERING_64 = [

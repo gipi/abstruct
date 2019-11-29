@@ -42,18 +42,7 @@ class MetaChunk(type):
         for obj_name, obj in attrs.items():
             new_cls.add_to_class(obj_name, obj)
 
-        # create a Field to use this Chunk
-        from . import fields as module_field
-
-        real_name = '%sField' % new_cls.__name__
-
         cls.logger = logging.getLogger(__name__)
-        cls.logger.debug('creating class \'%s\'' % real_name)
-
-        ChunkClass = type(real_name, (Field,), {})
-        ChunkClass.real = new_cls
-
-        setattr(module_field, real_name, ChunkClass)
 
         return new_cls
 
@@ -66,7 +55,7 @@ class MetaChunk(type):
             setattr(cls, name, value)
 
 
-class Chunk(metaclass=MetaChunk):
+class Chunk(Field, metaclass=MetaChunk):
     '''
     With Field is the main class that defines a format: its main attributes
     are offset and size that identify univocally a Chunk.
@@ -90,12 +79,9 @@ class Chunk(metaclass=MetaChunk):
     the fields won't be found.
     '''
 
-    def __init__(self, filepath=None, father=None, offset=None, compliant=Compliant.INHERIT, **kwargs):
+    def __init__(self, filepath=None, **kwargs):
         self.stream = Stream(filepath) if filepath else filepath
-        self.offset = offset  # can be None, an integer or a Dependency
-        self.father = father
-        self.compliant = compliant  # TODO: use an Enum to do more fine grained control over what causes exception on unpacking
-        self.logger = logging.getLogger(__name__)
+        super().__init__(**kwargs)
 
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor

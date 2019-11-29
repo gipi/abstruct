@@ -329,6 +329,8 @@ class ElfSymbolType(Enum):
     STT_FUNC   = 0x02
     STT_SECTION = 0x03
     STT_FILE   = 0x04
+    STT_TLS    = 0x06
+    STB_LOOS   = 0x0a
     STT_LOPROC = 13
     STT_HIPROC = 15
 

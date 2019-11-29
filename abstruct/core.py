@@ -110,14 +110,14 @@ class Chunk(metaclass=MetaChunk):
 
     def __repr__(self):
         msg = []
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             field = getattr(self, field_name)
             msg.append('%s=%s' % (field_name, repr(field)))
         return '<%s(%s)>' % (self.__class__.__name__, ','.join(msg))
 
     def __str__(self):
         msg = ''
-        for field_name, _ in self._meta.fields:
+        for field_name in self._meta.fields:
             field = getattr(self, field_name)
             msg += '%s: %s\n' % (field_name, repr(field))
         return msg
@@ -137,7 +137,7 @@ class Chunk(metaclass=MetaChunk):
     def size(self):
         '''the size parameter MUST not be set but MUST be derived from the subchunks'''
         size = 0
-        for field_name, _ in self._meta.fields:
+        for field_name in self._meta.fields:
             field = getattr(self, field_name)
             size += field.size()
 
@@ -146,7 +146,7 @@ class Chunk(metaclass=MetaChunk):
     @property
     def raw(self):
         value = b''
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             field = getattr(self, field_name)
             value += field.raw
 
@@ -159,7 +159,7 @@ class Chunk(metaclass=MetaChunk):
         In practice it's like packing() but it's only interested in the sizes
         of the chunks.'''
         self.offset = offset
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
@@ -183,7 +183,7 @@ class Chunk(metaclass=MetaChunk):
 
         stream = Stream(b'') if not stream else stream
 
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
@@ -216,7 +216,7 @@ class Chunk(metaclass=MetaChunk):
             1. you can have size and offset dependencies
             2. you can enforce dependencies or not
         '''
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             self.logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
 

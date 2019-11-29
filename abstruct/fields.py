@@ -68,7 +68,6 @@ class Field(FieldBase):
     def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
         super().__init__(*args, name=name, father=father, default=default, offset=offset, endianess=endianess, compliant=compliant, is_magic=is_magic, **kwargs)
         self._resolve = True  # TODO: create contextmanager
-        self._phase = ChunkPhase.INIT
         self.name = name
         self.father = father
         self.default = default
@@ -139,10 +138,6 @@ class Field(FieldBase):
             instance = instance.father
 
         return False
-
-    @property
-    def phase(self):
-        return self._phase
 
     def __set_offset(self, value):
         self.__offset = value
@@ -394,7 +389,6 @@ class RealArrayField(RealField):
 
     @n.setter
     def set_n(self, n):
-        import pdb; pdb.set_trace()
         old_n = self._n
         self._n = n
 

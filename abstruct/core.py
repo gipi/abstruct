@@ -92,7 +92,6 @@ class Chunk(metaclass=MetaChunk):
         self.stream = Stream(filepath) if filepath else filepath
         self.offset = offset  # can be None, an integer or a Dependency
         self.father = father
-        self._phase = ChunkPhase.INIT
         self.compliant = compliant  # TODO: use an Enum to do more fine grained control over what causes exception on unpacking
         self.logger = logging.getLogger(__name__)
 
@@ -104,14 +103,6 @@ class Chunk(metaclass=MetaChunk):
         else:
             for name in self.__class__._meta.fields:
                 getattr(self, name).init()  # FIXME: understand init() logic :P
-
-    @classmethod
-    def add_dependencies(cls, father, child_name, deps):
-        '''Rememebers relations between childs.
-        We need to remember both r/w side.'''
-        for dep in deps:
-            # dependencies are indexed by the src field name
-            cls._dependencies[child_name] = dep
 
     def get_fields(self):
         '''It returns a list of couples (name, instance) for each field.'''
@@ -142,20 +133,6 @@ class Chunk(metaclass=MetaChunk):
     @property
     def isRoot(self):
         return self.root == self
-
-    @property
-    def phase(self):
-        '''describe the status of the chunk, mainly used internally to understand
-        if is ongoing packing/unpacking or whatever.
-
-        If its children are not ongoing any process then is DONE.
-        '''
-        fields = [getattr(self, field_name) for field_name, _ in self._meta.fields]
-        for field in fields:
-            if field.phase == ChunkPhase.PROGRESS:
-                return ChunkPhase.PROGRESS
-
-        return ChunkPhase.DONE
 
     def size(self):
         '''the size parameter MUST not be set but MUST be derived from the subchunks'''

@@ -126,9 +126,6 @@ class CoreTests(unittest.TestCase):
 
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
-        self.assertEqual(d.phase, ChunkPhase.DONE)
-        self.assertEqual(d.dummy.phase, ChunkPhase.DONE)
-        self.assertEqual(d.dummy.field.phase, ChunkPhase.INIT)
 
     def test_offset_basic(self):
         '''Test that the offset is handled correctly in basic case'''

@@ -407,7 +407,7 @@ class ArrayField(Field):
             self.unpack_element(element, stream)
             element.offset = element_offset
 
-            self.append(element)
+            self._value.append(element)
 
             idx += 1
 

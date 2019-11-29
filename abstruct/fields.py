@@ -1,5 +1,6 @@
 import logging
 import struct
+import copy
 from enum import Enum, Flag, auto
 
 from .enum import Compliant
@@ -15,33 +16,57 @@ class Endianess(Enum):
     NATIVE        = auto()
 
 
-'''
-The ratio here is that since the instances at which are attacched
-the fields need to have separate instances to interact with, we need
-the XFIeld() associated to the chunk to be constructor for the XChunk().
-'''
+class FieldDescriptor(object):
+
+    def __init__(self, field_instance, field_name):
+        self.field = field_instance
+        self.field.name = field_name
+
+    def __get__(self, instance, type=None):
+        data = instance.__dict__
+
+        if self.field.name in data:
+            return data[self.field.name]
+        else:
+            new_field = self.field.create(father=instance)
+            data[self.field.name] = new_field
+            return data[self.field.name]
+
+    def __set__(self, instance, value):
+        data = instance.__dict__
+
+        # if the value is the same type then set as it is
+        if isinstance(value, self.field.__class__):
+            value.father = instance
+            value.name = self.field.name
+            data[self.field.name] = value
+        # otherwise delegate to the field
+        else:
+            data[self.field.name].set(value)
 
 
-class Field(object):
-
-    real = None
+class FieldBase(object):
 
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
 
     def contribute_to_chunk(self, cls, name):
-        cls._meta.fields.append((name, self))
+        if not getattr(cls, name, None):
+            setattr(cls, name, FieldDescriptor(self, name))
+        else:
+            raise AttributeError(f'field {name} is already present in class {cls.__name__}')
 
-    def __call__(self, father, name=None):
-        if not self.real:
-            raise AttributeError('property \'real\' is None')
-        return self.real(*self.args, name=name, father=father, **self.kwargs)
+    def create(self, father):
+        instance = copy.deepcopy(self)
+        instance.father = father
+        return instance
 
 
-class RealField(object):
+class Field(FieldBase):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
+        super().__init__(*args, name=name, father=father, default=default, offset=offset, endianess=endianess, compliant=compliant, is_magic=is_magic, **kwargs)
         self._resolve = True  # TODO: create contextmanager
         self._phase = ChunkPhase.INIT
         self.name = name
@@ -52,7 +77,6 @@ class RealField(object):
         self._data = None
         self.little_endian = little_endian
         self.endianess = endianess
-        self.formatter = formatter if formatter else '%s'
         self.compliant = compliant
         self.is_magic = is_magic
         self.logger = logging.getLogger(__name__)
@@ -177,9 +201,9 @@ class RealField(object):
 class RealStructField(RealField):
 
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
+        super().__init__(format, default=default if not equals_to else equals_to, **kw)
         self.format = format
         self.enum = enum
-        super().__init__(default=default if not equals_to else equals_to, **kw)
 
     def __repr__(self):
         if not self.enum:

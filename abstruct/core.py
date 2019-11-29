@@ -55,13 +55,10 @@ class MetaChunk(type):
 
         return new_cls
 
-    # TODO: factorize with Field()
-    def contribute_to_chunk(self, cls, name):
-        cls._meta.fields.append((name, self))
-
     def add_to_class(cls, name, value):
         if hasattr(value, 'contribute_to_chunk'):
             cls.logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
+            cls._meta.fields.append(name)
             value.contribute_to_chunk(cls, name)
         else:
             setattr(cls, name, value)
@@ -99,20 +96,13 @@ class Chunk(metaclass=MetaChunk):
         self.compliant = compliant  # TODO: use an Enum to do more fine grained control over what causes exception on unpacking
         self.logger = logging.getLogger(__name__)
 
-        for name, field_constructor in self.__class__._meta.fields:
-            self.logger.debug('field \'%s\' initialized' % name)
-            try:
-                setattr(self, name, field_constructor(self, name=name))
-            except AttributeError as e:
-                raise AttributeError(f'field \'{name}\' cannot be set')
-
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
         if self.stream:
             self.logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
             self.unpack(self.stream)
         else:
-            for name, _ in self.__class__._meta.fields:
+            for name in self.__class__._meta.fields:
                 getattr(self, name).init()  # FIXME: understand init() logic :P
 
     @classmethod

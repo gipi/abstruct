@@ -377,7 +377,7 @@ class FieldsTests(unittest.TestCase):
             crc   = CRCField([
                 'dataA',
                 'dataC',
-            ], formatter='0x%08x')
+            ])
 
         dummy = DummyChunk()
         dummy.dataA.value = 0x01020304

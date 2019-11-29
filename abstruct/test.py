@@ -319,7 +319,11 @@ class FieldsTests(unittest.TestCase):
 
         self.assertTrue(hasattr(d, 'chunks'))
         self.assertEqual(len(d.chunks.value), 3)
+        self.assertEqual(d.chunks.n, 3)
         self.assertTrue(isinstance(d.chunks.value, list))
+
+        d.chunks.n = 0
+        self.assertEqual(len(d.chunks.value), 0, 'check change in n -> change in array')
 
     def test_select(self):
         class DummyType(Flag):
@@ -518,8 +522,11 @@ class ELFTest(unittest.TestCase):
         index_section_string_table = elf.header.e_shstrndx.value
         section_string_table = elf.sections_header.value[index_section_string_table]
         print(section_string_table.pack())
+        print(elf.segments.get_segment_for_address(0x00001ef8))
+
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''
+        data_empty = b''
         data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
         data = b'miao' * 16
 

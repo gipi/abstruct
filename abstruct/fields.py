@@ -61,7 +61,7 @@ class FieldBase(object):
 
 class Field(FieldBase):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
         super().__init__()
         self._resolve = True  # TODO: create contextmanager
         self.name = name

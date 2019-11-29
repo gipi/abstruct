@@ -52,8 +52,8 @@ class IHDRData(Chunk):
     Bit depth is a single-byte integer giving the number of bits per sample or per palette index (not per pixel).
     Color type is a single-byte integer that describes the interpretation of the image data.
     '''
-    width       = fields.StructField('I', little_endian=False)
-    height      = fields.StructField('I', little_endian=False)
+    width       = fields.StructField('I', endianess=fields.Endianess.BIG_ENDIAN)
+    height      = fields.StructField('I', endianess=fields.Endianess.BIG_ENDIAN)
     depth       = fields.StructField('B')
     color       = fields.StructField('B', enum=PNGColorType, default=PNGColorType.GRAYSCALE)
     compression = fields.StructField('B', enum=PNGCompressionType, default=PNGCompressionType.DEFLATE)
@@ -106,10 +106,10 @@ class PNGChunk(Chunk):
      3. IDAT: contains the actual image data (compressed)
      4. IEND: is the terminator chunk
     '''
-    length = fields.StructField('I', little_endian=False)  # big endian
+    length = fields.StructField('I', endianess=fields.Endianess.BIG_ENDIAN)  # big endian
     type   = fields.StringField(4)
     Data   = fields.SelectField('type', type2field)
-    crc    = crc.CRCField(['type', 'Data'], little_endian=False)  # network byte order
+    crc    = crc.CRCField(['type', 'Data'], endianess=fields.Endianess.BIG_ENDIAN)  # network byte order
 
     def isCritical(self):
         return chr(self.type.value[0]).isupper()

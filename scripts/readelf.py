@@ -46,9 +46,9 @@ def dump_header(hdr):
 
 def dump_segments(phdr, ph):
     print(f'''Program Headers:
-  Type{" ":<36}Offset   VirtAddr   PhysAddr      FileSiz   MemSiz             Flag                Align''')
+ Type{" ":<36} Offset            VirtAddr   PhysAddr      FileSiz   MemSiz             Flag                Align''')
     for idx, segment in enumerate(phdr.value):
-        print(f'''{segment.p_type.value:<40} {segment.p_offset} {segment.p_vaddr.value:08x} 0x{segment.p_paddr.value:08x} 0x{segment.p_filesz.value:08x} 0x{segment.p_memsz.value:08x} {segment.p_flags.value:<30}0x{segment.p_align.value:x}''')
+        print(f'''{segment.p_type.value:<40} {segment.p_offset} {segment.p_vaddr.value:08x}-0x{segment.p_vaddr.value + segment.p_memsz.value:08x} 0x{segment.p_paddr.value:08x} 0x{segment.p_filesz.value:08x} 0x{segment.p_memsz.value:08x} {segment.p_flags.value:<30}0x{segment.p_align.value:x}''')
         if segment.p_type.value == ElfSegmentType.PT_INTERP:
             interpreter_path = ph.value[idx].value.decode()
             print(f'''      [Requesting program interpreter: {interpreter_path}]''')

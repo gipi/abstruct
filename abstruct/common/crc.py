@@ -9,7 +9,7 @@ from zlib import crc32
 
 # FIXME: if you don't pack the fields the CRC is undefined
 #        maybe add a relationship between them
-class RealCRCField(fields.RealStructField):
+class CRCField(fields.StructField):
 
     def __init__(self, fields, *args, **kwargs):
         self.fields = fields
@@ -25,8 +25,3 @@ class RealCRCField(fields.RealStructField):
 
     def _update_value(self):
         self.value = self.calculate()
-
-
-class CRCField(fields.StructField):
-
-    real = RealCRCField

@@ -84,9 +84,9 @@ class PNGHeader(Chunk):
 
 type2field = {
     b'IHDR': (IHDRData, (), {}),
-    b'PLTE': (fields.RealArrayField, (PLTEEntry,), {'n': RatioDependency(3, '.length')}),
-    b'gAMA': (fields.RealStringField, (Dependency('.length'),), {}),
-    fields.RealSelectField.Type.DEFAULT: (fields.RealStringField, (Dependency('.length'),), {}),
+    b'PLTE': (fields.ArrayField, (PLTEEntry,), {'n': RatioDependency(3, '.length')}),
+    b'gAMA': (fields.StringField, (Dependency('.length'),), {}),
+    fields.SelectField.Type.DEFAULT: (fields.StringField, (Dependency('.length'),), {}),
 }
 
 

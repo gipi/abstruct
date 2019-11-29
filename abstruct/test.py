@@ -88,7 +88,7 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(isinstance(d._meta, Meta))
         self.assertEqual(len(d._meta.fields), 1)
         self.assertTrue(hasattr(d, 'field'))
-        self.assertTrue(isinstance(d.field, fields.RealStructField))
+        self.assertTrue(isinstance(d.field, fields.StructField))
         self.assertEqual(len(d2._meta.fields), 1)
 
     def test_inheritance(self):
@@ -328,8 +328,8 @@ class FieldsTests(unittest.TestCase):
             SECOND = 1
 
         type2field = {
-            DummyType.FIRST: (fields.RealStructField, ('I', ), {}),
-            DummyType.SECOND: (fields.RealStringField, (0x10, ), {}),
+            DummyType.FIRST: (fields.StructField, ('I', ), {}),
+            DummyType.SECOND: (fields.StringField, (0x10, ), {}),
         }
 
         class DummyChunk(Chunk):
@@ -390,7 +390,7 @@ class ELFTest(unittest.TestCase):
 
     def test_string_table(self):
         table = b'\x00ABCD\x00EFGH\x00'
-        string_table = elf_fields.RealSectionStringTable(size=len(table))
+        string_table = elf_fields.SectionStringTable(size=len(table))
 
         string_table.unpack(Stream(table))
         self.assertEqual(len(string_table.value), 3)
@@ -400,7 +400,7 @@ class ELFTest(unittest.TestCase):
             'EFGH',
         ])
 
-        string_table = elf_fields.RealSectionStringTable(default=['', 'miao', 'bau'])
+        string_table = elf_fields.SectionStringTable(default=['', 'miao', 'bau'])
         s = Stream(b'')
         string_table.pack(s)
 
@@ -513,7 +513,7 @@ class ELFTest(unittest.TestCase):
         print('\n'.join(
             ["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str)
                 for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
-        self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.RealSectionStringTable()))
+        self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.SectionStringTable()))
 
         # check if the string table is dumped correctly
         index_section_string_table = elf.header.e_shstrndx.value

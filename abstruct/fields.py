@@ -193,7 +193,7 @@ class Field(FieldBase):
         raise NotImplemented('you need to implement this in the subclass')
 
 
-class RealStructField(RealField):
+class StructField(Field):
 
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
         super().__init__(format, default=default if not equals_to else equals_to, **kw)
@@ -268,12 +268,8 @@ class RealStructField(RealField):
                 raise MagicException(chain=[])
 
 
-class StructField(Field):
-    real = RealStructField
-
-
 # TODO: understand if it is needed to separate from Binary and alphanumeric strings.
-class RealStringField(RealField):
+class StringField(Field):
 
     def __init__(self, n=0, **kw):
         super().__init__(**kw)
@@ -312,24 +308,7 @@ class RealStringField(RealField):
             raise MagicException(chain=None)
 
 
-class StringField(Field):
-    '''This in an array of "n" char'''
-    real = RealStringField
-
-
-class StringNullTerminatedField(Field):
-
-    def __init__(self, default='\x00', **kw):
-        super().__init__(default=default, **kw)
-
-    def init(self, default):
-        self.value = default
-
-    def pack(self, stream=None, relayout=True):
-        return self.value
-
-
-class RealArrayField(RealField):
+class ArrayField(Field):
     '''Un/Pack an array of Chunks.
 
     You can indicate an explicite number of elements via the parameter named "n"
@@ -440,11 +419,7 @@ class RealArrayField(RealField):
                     break
 
 
-class ArrayField(Field):
-    real = RealArrayField
-
-
-class RealSelectField(RealField):
+class SelectField(Field):
     '''Allow to select the kind of final field based on condition
     in the parent chunk. You need to pass the name of the field
     to use as key and a dictionary with the mapping between type
@@ -492,7 +467,7 @@ class RealSelectField(RealField):
         self.logger.debug('resolving key \'%s\'' % self._key)
         field_key = getattr(self.father, self._key)
 
-        key = field_key.value if field_key.value in self._mapping else RealSelectField.Type.DEFAULT
+        key = field_key.value if field_key.value in self._mapping else SelectField.Type.DEFAULT
 
         self.logger.debug('using key to \'%s\' (original was \'%s\')' % (key, field_key.value))
 
@@ -505,14 +480,7 @@ class RealSelectField(RealField):
         self.logger.debug(f'unpacked {self._field!r}')
 
 
-class SelectField(Field):
-    '''
-    This field can be used like an array
-    '''
-    real = RealSelectField
-
-
-class RealPaddingField(RealField):
+class PaddingField(Field):
     '''Takes as much stream as possible'''
 
     def unpack(self, stream):
@@ -520,7 +488,3 @@ class RealPaddingField(RealField):
 
     def init(self):
         pass
-
-
-class PaddingField(Field):
-    real = RealPaddingField

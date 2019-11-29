@@ -171,10 +171,10 @@ class ElfFile(Chunk):
     @property
     def dynamic(self):
         '''It returns the dynamic segment of the ELF executable if it exists, i.e.
-        an instance of RealElfDynamicSegmentField.'''
+        an instance of ElfDynamicSegmentField.'''
         dyn = None
         for segment in self.segments.value:
-            if isinstance(segment, elf_fields.RealElfDynamicSegmentField):
+            if isinstance(segment, elf_fields.ElfDynamicSegmentField):
                 dyn = segment
                 break
 

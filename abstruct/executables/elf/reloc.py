@@ -9,7 +9,7 @@ class ElfRelEntry(Chunk):
     r_info   = ElfRelocationInfoField()
 
 
-class ElfRelocationTable(fields.RealArrayField):
+class ElfRelocationTable(fields.ArrayField):
 
     def __init__(self, *args, size=None, **kwargs):
         if size and 'n' in kwargs:  # FIXME: factorize into RealArrayField

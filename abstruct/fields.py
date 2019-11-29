@@ -397,9 +397,9 @@ class ArrayField(Field):
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
-        self.value = []  # reset the fields already present
-        real_n = self.n if self.n is not None else 100  # FIXME
-        for idx in range(real_n):
+        self._value = []  # reset the fields already present
+        idx = 0
+        while True:
             element = self.instance_element()
             self.logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
 
@@ -409,9 +409,15 @@ class ArrayField(Field):
 
             self.append(element)
 
+            idx += 1
+
+            # "canary" has precedence over "n"
             if self._canary is not None:
                 if self._canary(element):
-                    self.n = idx
+                    self._n = idx
+                    break
+            else:
+                if self._n == idx:
                     break
 
 

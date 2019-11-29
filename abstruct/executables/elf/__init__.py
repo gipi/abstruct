@@ -109,6 +109,8 @@ class SegmentHeader(Chunk):
     p_align  = elf_fields.Elf_Xword()
 
 
+# A tricky part about the ELF format is that both sections and segments
+# reference the same part of the file by offset and size indipendently.
 class ElfFile(Chunk):
     header          = fields.ElfHeaderField()
     sections_header = fields.ArrayField(SectionHeader, n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
@@ -127,7 +129,7 @@ class ElfFile(Chunk):
 
     @property
     def dynamic_symbol_names_table(self):
-        return self.get_section_by_name('.dynstr')
+        return self.get_section_by_name('.dynstr')  # FIXME: find this using the dynamic segment
 
     @property
     def section_names(self):

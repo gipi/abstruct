@@ -50,9 +50,9 @@ class ElfMachine(Enum):
     EM_H8S     = 48
     EM_H8_500  = 49
     EM_IA_64   = 50
-    #EM_MIPS_X
-    #EM_COLDFIRE
-    #EM_68HC12
+    # EM_MIPS_X
+    # EM_COLDFIRE
+    # EM_68HC12
     EM_MMA = 54
     EM_PCP = 55
     EM_NCPU = 56
@@ -114,10 +114,10 @@ class ElfMachine(Enum):
     EM_DXP = 112
     EM_ALTERA_NIOS2 = 113
     EM_CRX = 114
-    #EM_XGATE
+    # EM_XGATE
     EM_C166 = 116
     EM_M16C = 117
-    #EM_DSPIC30F
+    # EM_DSPIC30F
     EM_CE = 119
     EM_M32C = 120
     EM_TSK3000 = 131

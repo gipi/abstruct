@@ -300,6 +300,10 @@ class FieldsTests(unittest.TestCase):
         self.assertEqual(df.field_wo_default.value, 0)
         self.assertEqual(df.field_w_default.value, 0xdead)
 
+        df = DummyFile(b'\x01\x02\x03\x04\x05\x06\x07\x08')
+        self.assertEqual(df.field_wo_default.value, 0x04030201)
+        self.assertEqual(df.field_w_default.value, 0x08070605)
+
     def test_bitfield(self):
         class WhateverEnum(Enum):
             pass

@@ -102,6 +102,11 @@ class Field(FieldBase):
         try:
             # the try block is needed in order to catch initialization of variables
             # for the first time
+            # try to see if is a property
+            field = getattr(self.__class__, name, None)
+            # FIXME: doesn't work if @x.setter is used, do you know why?
+            if isinstance(field, property) and field.fset is not None:
+                return field.fset(self, value)
             field = super().__getattribute__(name)
             self.__dict__['_resolve'] = True
             if isinstance(field, Dependency):
@@ -110,10 +115,6 @@ class Field(FieldBase):
                 real_field.value = value
                 return
 
-            # try to see if is a property
-            field = getattr(self.__class__, name, None)
-            if isinstance(field, property) and field.fset is not None:
-                field.fset(self, value)
         except AttributeError:
             pass
         finally:
@@ -357,14 +358,17 @@ class ArrayField(Field):
 
         return size
 
-    @property
-    def n(self):
+    def get_n(self):
         return self._n
 
-    @n.setter
     def set_n(self, n):
         old_n = self._n
         self._n = n
+
+        # FIXME: it's an hack
+        self._value = self._value[:n]
+
+    n = property(fget=get_n, fset=set_n)
 
     def relayout(self, offset=0):
         super().relayout(offset=offset)

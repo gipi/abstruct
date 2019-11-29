@@ -82,7 +82,7 @@ class Field(FieldBase):
         pass
 
     def __str__(self):
-        return self.formatter % (self.value)
+        return str(self.value)
 
     def __getattribute__(self, name):
         '''If the field is a Field then return directly the 'value' attribute'''

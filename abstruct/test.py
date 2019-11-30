@@ -383,15 +383,16 @@ class FieldsTests(unittest.TestCase):
     def test_dependency(self):
         class DummyChunk(Chunk):
             magic = fields.StringField(n=5, default=b"HELLO")
-            garbage = fields.StringField(0x10)
-            dummy_size = fields.StructField('I', equals_to=Dependency('size'))
+            length = fields.StructField('I')
+            garbage = fields.StringField(Dependency('.length'))
 
         dummy = DummyChunk()
 
-        self.assertEqual(dummy.dummy_size.value, 25)
+        self.assertEqual(dummy.length.value, 0, f'check default \'length\' is zero')
+        self.assertEqual(dummy.garbage.value, b'', f'check the starting string is empty')
 
         dummy.garbage.value = b'ABCD'
-        self.assertEqual(dummy.dummy_size.value, 13)
+        self.assertEqual(dummy.length.value, 4, f'check we have an updated \'length\' field')
 
     def test_crc32(self):
         class DummyChunk(Chunk):

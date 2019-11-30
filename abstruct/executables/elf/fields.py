@@ -260,7 +260,7 @@ class SymbolTableEntry(Chunk):
 class SymbolTable(fields.ArrayField):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(SymbolTableEntry, *args, **kwargs)
+        super().__init__(SymbolTableEntry(), *args, **kwargs)
 
 
 class DynamicEntry(Chunk):
@@ -271,7 +271,7 @@ class DynamicEntry(Chunk):
 class ElfDynamicSegmentField(fields.ArrayField):
 
     def __init__(self, *args, size=None, father=None, **kwargs):
-        super().__init__(DynamicEntry, *args, n=int(size / DynamicEntry(father=father).size()), father=father, **kwargs)
+        super().__init__(DynamicEntry(), *args, n=int(size / DynamicEntry(father=father).size()), father=father, **kwargs)
         self._dict = {}
 
     def _resolve_entry_DT_NEEDED(self, entry, elf):

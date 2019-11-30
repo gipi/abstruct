@@ -84,7 +84,7 @@ class PNGHeader(Chunk):
 
 type2field = {
     b'IHDR': (IHDRData, (), {}),
-    b'PLTE': (fields.ArrayField, (PLTEEntry,), {'n': RatioDependency(3, '.length')}),
+    b'PLTE': (fields.ArrayField, (PLTEEntry(),), {'n': RatioDependency(3, '.length')}),
     b'gAMA': (fields.StringField, (Dependency('.length'),), {}),
     fields.SelectField.Type.DEFAULT: (fields.StringField, (Dependency('.length'),), {}),
 }
@@ -117,4 +117,4 @@ class PNGChunk(Chunk):
 
 class PNGFile(Chunk):
     header = PNGHeader()
-    chunks = fields.ArrayField(PNGChunk, canary=lambda x: x.type.value == b'IEND')
+    chunks = fields.ArrayField(PNGChunk(), canary=lambda x: x.type.value == b'IEND')

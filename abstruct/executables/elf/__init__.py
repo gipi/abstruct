@@ -104,8 +104,8 @@ class SegmentHeader(Chunk):
 # reference the same part of the file by offset and size indipendently.
 class ElfFile(Chunk):
     header          = ElfHeader()
-    sections_header = fields.ArrayField(SectionHeader, n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
-    segments_header = fields.ArrayField(SegmentHeader, n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
+    sections_header = fields.ArrayField(SectionHeader(), n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
+    segments_header = fields.ArrayField(SegmentHeader(), n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
     sections        = elf_fields.ELFSectionsField(Dependency('sections_header'))
     segments        = elf_fields.ELFSegmentsField(Dependency('segments_header'))
 

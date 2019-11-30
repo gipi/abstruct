@@ -310,15 +310,12 @@ class ArrayField(Field):
     You can indicate an explicite number of elements via the parameter named "n"
     or you can indicate with a callable returning True which element is the terminator
     for the list via the parameter named "canary".
-
-    default_cls can be a single (args, kwargs) for item or a list
     '''
 
-    def __init__(self, field_cls, n=0, canary=None, default_cls=None, **kw):
+    def __init__(self, field_cls, n=0, canary=None, **kw):
         self.field_cls = field_cls
         self._n = n
         self._canary = canary
-        self.default_cls = default_cls
 
         if n and not (isinstance(n, Dependency) or isinstance(n, int)):
             raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
@@ -326,7 +323,7 @@ class ArrayField(Field):
         if 'default' not in kw:
             kw['default'] = []
             if isinstance(n, int) and n > 0:
-                kw['default'] = [self.field_cls()] * n
+                kw['default'] = [self.instance_element()] * n
 
         super().__init__(**kw)
 
@@ -385,7 +382,7 @@ class ArrayField(Field):
         return data  # FIXME
 
     def instance_element(self):
-        return self.field_cls(father=self)  # pass the father so that we don't lose the hierarchy
+        return self.field_cls.create(father=self)  # pass the father so that we don't lose the hierarchy
 
     def unpack_element(self, element, stream):
         element.unpack(stream)

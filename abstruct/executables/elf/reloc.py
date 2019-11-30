@@ -18,7 +18,7 @@ class ElfRelocationTable(fields.ArrayField):
         if size:
             kwargs['n'] = int(size / ElfRelEntry(father=kwargs['father']).size())
 
-        super().__init__(ElfRelEntry, *args, **kwargs)
+        super().__init__(ElfRelEntry(), *args, **kwargs)
 
 
 class ElfRelocationType_i386(Enum):

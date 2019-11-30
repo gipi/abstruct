@@ -314,7 +314,7 @@ class FieldsTests(unittest.TestCase):
             field_b = fields.StructField("I")
 
         class DummyFile(Chunk):
-            chunks = fields.ArrayField(DummyChunk, n=3)
+            chunks = fields.ArrayField(DummyChunk(), n=3)
 
         d = DummyFile()
 

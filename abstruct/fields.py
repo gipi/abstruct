@@ -235,7 +235,8 @@ class StructField(Field):
             self.value = struct.unpack(self.get_format(), self._data)[0]
         except struct.error as e:
             self.logger.error(e)
-            raise UnpackException(chain=[])
+            exc = MagicException if self.is_compliant(Compliant.MAGIC) else UnpackException
+            raise exc(chain=[])
 
     def unpack_enum(self):
         if self.enum:

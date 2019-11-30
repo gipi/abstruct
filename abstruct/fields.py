@@ -401,7 +401,7 @@ class ArrayField(Field):
         idx = 0
         while True:
             element = self.instance_element()
-            self.logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
+            self.logger.debug('%s: unpacking item %d' % (self.__class__.__name__, idx))
 
             element_offset = stream.tell()
             self.unpack_element(element, stream)

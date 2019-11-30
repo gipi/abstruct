@@ -80,7 +80,7 @@ class Chunk(Field, metaclass=MetaChunk):
     '''
 
     def __init__(self, filepath=None, **kwargs):
-        self.stream = Stream(filepath) if filepath else filepath
+        self.stream = Stream(filepath) if filepath is not None else filepath
         super().__init__(**kwargs)
 
         # now we have setup all the fields necessary and we can unpack if

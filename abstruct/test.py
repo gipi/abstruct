@@ -553,24 +553,26 @@ class ELFTest(unittest.TestCase):
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''
         data_empty = b''
-        data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
-        data = b'miao' * 16
+        data = b'\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
 
         empty_success = False
         try:
-            ElfFile(data_empty)
+            elf = ElfFile(data_empty, compliant=Compliant.MAGIC)
         except MagicException as e:
             empty_success = True
         except Exception as e:
             logger.error(e)
 
-        self.assertTrue(empty_success)
+        self.assertTrue(empty_success, 'check empty file causes exception')
+
+        malformed_success = False
         try:
             elf = ElfFile(data, compliant=Compliant.ENUM | Compliant.MAGIC)
         except AbstructException as e:
+            malformed_success = True
             logger.debug('error during parsing at field \'%s\'' % '.'.join(e.chain[::-1]))
 
-        elf = ElfFile(data, complaint=Compliant.MAGIC)
+        self.assertTrue(malformed_success, 'check ELF with magic but body malformed causes exceptiocheck ELF with magic but body malformed causes exceptionn')
 
 
 class STK500Tests(unittest.TestCase):

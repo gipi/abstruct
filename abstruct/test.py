@@ -326,6 +326,30 @@ class FieldsTests(unittest.TestCase):
         d.chunks.n = 0
         self.assertEqual(len(d.chunks.value), 0, 'check change in n -> change in array')
 
+    def test_array_w_dependency(self):
+        class Dummy(Chunk):
+            count = fields.StructField('I')
+            items = fields.ArrayField(fields.StructField('I'), n=Dependency('.count'))
+
+        d = Dummy(b'\x05\x00\x00\x00' + b'A' * 4 + b'B' * 4 + b'C' * 4 + b'D' * 4 + b'E' * 4)
+
+        self.assertEqual(d.count.value, 5)
+        self.assertEqual(d.items.n, 5)
+        self.assertEqual([_.value for _ in d.items.value], [
+            0x41414141, 0x42424242, 0x43434343, 0x44444444, 0x45454545,
+        ])
+
+        # try to change 'n' and see what happens
+        d.count.value = 3
+        self.assertEqual(d.count.value, 3)
+        self.assertEqual(d.items.n, 3)
+        # self.assertEqual(len(d.items), 3)
+
+        d.items.n = 4
+        self.assertEqual(d.count.value, 4)
+        self.assertEqual(d.items.n, 4)
+        self.assertEqual(len(d.items), 4)
+
     def test_select(self):
         class DummyType(Flag):
             FIRST = 0

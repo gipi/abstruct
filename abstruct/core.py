@@ -34,40 +34,28 @@ class MetaChunk(type):
         # handle inheritance
         parents = [_ for _ in bases if isinstance(_, MetaChunk)]
         for parent in parents:
-            for obj_name, obj in parent._meta.fields:
-                new_cls.add_to_class(obj_name, obj)
+            for obj_name in parent._meta.fields:
+                obj = parent.__dict__[obj_name]
+                setattr(new_cls, obj_name, obj)
+                new_cls._meta.fields.append(obj_name)
 
         for obj_name, obj in attrs.items():
             new_cls.add_to_class(obj_name, obj)
 
-        # create a Field to use this Chunk
-        from . import fields as module_field
-
-        real_name = '%sField' % new_cls.__name__
-
         cls.logger = logging.getLogger(__name__)
-        cls.logger.debug('creating class \'%s\'' % real_name)
-
-        ChunkClass = type(real_name, (Field,), {})
-        ChunkClass.real = new_cls
-
-        setattr(module_field, real_name, ChunkClass)
 
         return new_cls
-
-    # TODO: factorize with Field()
-    def contribute_to_chunk(self, cls, name):
-        cls._meta.fields.append((name, self))
 
     def add_to_class(cls, name, value):
         if hasattr(value, 'contribute_to_chunk'):
             cls.logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
+            cls._meta.fields.append(name)
             value.contribute_to_chunk(cls, name)
         else:
             setattr(cls, name, value)
 
 
-class Chunk(metaclass=MetaChunk):
+class Chunk(Field, metaclass=MetaChunk):
     '''
     With Field is the main class that defines a format: its main attributes
     are offset and size that identify univocally a Chunk.
@@ -91,20 +79,9 @@ class Chunk(metaclass=MetaChunk):
     the fields won't be found.
     '''
 
-    def __init__(self, filepath=None, father=None, offset=None, compliant=Compliant.INHERIT, **kwargs):
-        self.stream = Stream(filepath) if filepath else filepath
-        self.offset = offset  # can be None, an integer or a Dependency
-        self.father = father
-        self._phase = ChunkPhase.INIT
-        self.compliant = compliant  # TODO: use an Enum to do more fine grained control over what causes exception on unpacking
-        self.logger = logging.getLogger(__name__)
-
-        for name, field_constructor in self.__class__._meta.fields:
-            self.logger.debug('field \'%s\' initialized' % name)
-            try:
-                setattr(self, name, field_constructor(self, name=name))
-            except AttributeError as e:
-                raise AttributeError(f'field \'{name}\' cannot be set')
+    def __init__(self, filepath=None, **kwargs):
+        self.stream = Stream(filepath) if filepath is not None else filepath
+        super().__init__(**kwargs)
 
         # now we have setup all the fields necessary and we can unpack if
         # some data is passed with the constructor
@@ -112,16 +89,8 @@ class Chunk(metaclass=MetaChunk):
             self.logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
             self.unpack(self.stream)
         else:
-            for name, _ in self.__class__._meta.fields:
+            for name in self.__class__._meta.fields:
                 getattr(self, name).init()  # FIXME: understand init() logic :P
-
-    @classmethod
-    def add_dependencies(cls, father, child_name, deps):
-        '''Rememebers relations between childs.
-        We need to remember both r/w side.'''
-        for dep in deps:
-            # dependencies are indexed by the src field name
-            cls._dependencies[child_name] = dep
 
     def get_fields(self):
         '''It returns a list of couples (name, instance) for each field.'''
@@ -129,14 +98,14 @@ class Chunk(metaclass=MetaChunk):
 
     def __repr__(self):
         msg = []
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             field = getattr(self, field_name)
             msg.append('%s=%s' % (field_name, repr(field)))
         return '<%s(%s)>' % (self.__class__.__name__, ','.join(msg))
 
     def __str__(self):
         msg = ''
-        for field_name, _ in self._meta.fields:
+        for field_name in self._meta.fields:
             field = getattr(self, field_name)
             msg += '%s: %s\n' % (field_name, repr(field))
         return msg
@@ -153,24 +122,10 @@ class Chunk(metaclass=MetaChunk):
     def isRoot(self):
         return self.root == self
 
-    @property
-    def phase(self):
-        '''describe the status of the chunk, mainly used internally to understand
-        if is ongoing packing/unpacking or whatever.
-
-        If its children are not ongoing any process then is DONE.
-        '''
-        fields = [getattr(self, field_name) for field_name, _ in self._meta.fields]
-        for field in fields:
-            if field.phase == ChunkPhase.PROGRESS:
-                return ChunkPhase.PROGRESS
-
-        return ChunkPhase.DONE
-
     def size(self):
         '''the size parameter MUST not be set but MUST be derived from the subchunks'''
         size = 0
-        for field_name, _ in self._meta.fields:
+        for field_name in self._meta.fields:
             field = getattr(self, field_name)
             size += field.size()
 
@@ -179,7 +134,7 @@ class Chunk(metaclass=MetaChunk):
     @property
     def raw(self):
         value = b''
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             field = getattr(self, field_name)
             value += field.raw
 
@@ -192,7 +147,7 @@ class Chunk(metaclass=MetaChunk):
         In practice it's like packing() but it's only interested in the sizes
         of the chunks.'''
         self.offset = offset
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
@@ -216,7 +171,7 @@ class Chunk(metaclass=MetaChunk):
 
         stream = Stream(b'') if not stream else stream
 
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
             field_instance = getattr(self, field_name)
@@ -249,7 +204,7 @@ class Chunk(metaclass=MetaChunk):
             1. you can have size and offset dependencies
             2. you can enforce dependencies or not
         '''
-        for field_name, _ in self.get_fields():
+        for field_name in self.get_fields():
             self.logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
             field = getattr(self, field_name)
 

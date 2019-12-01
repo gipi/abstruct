@@ -30,7 +30,7 @@ from ... import fields
 
 
 class ElfHeader(Chunk):
-    e_ident     = fields.ElfIdentField()
+    e_ident     = elf_fields.ElfIdent()
     e_type      = elf_fields.Elf_Half(enum=ElfType, default=ElfType.ET_EXEC)
     e_machine   = elf_fields.Elf_Half(enum=ElfMachine, default=ElfMachine.EM_386)
     e_version   = elf_fields.Elf_Word(enum=ElfVersion, default=ElfVersion.EV_CURRENT)
@@ -75,11 +75,10 @@ class SegmentHeader(Chunk):
 
     def get_fields(self):
         original_fields = super().get_fields()
-        # FIXME: here we need to call resolve() by ourself since it's not a field
-        if self._elf_class.resolve(self) == ElfEIClass.ELFCLASS32:
+        if self._elf_class == ElfEIClass.ELFCLASS32:
             return original_fields
 
-        ORDERING_64 = [
+        return [
             'p_type',
             'p_flags',
             'p_offset',
@@ -89,15 +88,7 @@ class SegmentHeader(Chunk):
             'p_memsz',
             'p_align',
         ]
-        modified_fields = []
-        # FIXME: this is shit
-        for name in ORDERING_64:
-            for _ in original_fields:
-                if _[0] == name:
-                    modified_fields.append(_)
-                    break
 
-        return modified_fields
 
     p_type   = elf_fields.Elf_Word(enum=ElfSegmentType, default=ElfSegmentType.PT_NULL)
     p_offset = elf_fields.Elf_Off()
@@ -112,9 +103,9 @@ class SegmentHeader(Chunk):
 # A tricky part about the ELF format is that both sections and segments
 # reference the same part of the file by offset and size indipendently.
 class ElfFile(Chunk):
-    header          = fields.ElfHeaderField()
-    sections_header = fields.ArrayField(SectionHeader, n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
-    segments_header = fields.ArrayField(SegmentHeader, n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
+    header          = ElfHeader()
+    sections_header = fields.ArrayField(SectionHeader(), n=Dependency('header.e_shnum'), offset=Dependency('header.e_shoff'))
+    segments_header = fields.ArrayField(SegmentHeader(), n=Dependency('header.e_phnum'), offset=Dependency('header.e_phoff'))
     sections        = elf_fields.ELFSectionsField(Dependency('sections_header'))
     segments        = elf_fields.ELFSegmentsField(Dependency('segments_header'))
 
@@ -171,10 +162,10 @@ class ElfFile(Chunk):
     @property
     def dynamic(self):
         '''It returns the dynamic segment of the ELF executable if it exists, i.e.
-        an instance of RealElfDynamicSegmentField.'''
+        an instance of ElfDynamicSegmentField.'''
         dyn = None
         for segment in self.segments.value:
-            if isinstance(segment, elf_fields.RealElfDynamicSegmentField):
+            if isinstance(segment, elf_fields.ElfDynamicSegmentField):
                 dyn = segment
                 break
 

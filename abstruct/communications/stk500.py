@@ -12,21 +12,26 @@ response of command at application level.
 So we should maintain an internal status to tell which side of the communication
 we are packing/unpacking.
 '''
-from ..core import *
+from ..core import Chunk
+from ..properties import Dependency
 from .. import fields
+
 
 class STK500Packet(Chunk):
     '''Transport layer'''
-    message_start   = fields.StructField('B', default=0x1b, formatter='%02x')
-    sequence_number = fields.StructField('B') # TODO: create SequenceNumberField that creates such number
-    message_size    = fields.StructField('H', little_endian=False)
-    token           = fields.StructField('B', default=0x0e, formatter='%02x')
+    message_start   = fields.StructField('B', default=0x1b)
+    sequence_number = fields.StructField('B')  # TODO: create SequenceNumberField that creates such number
+    message_size    = fields.StructField('H', endianess=fields.Endianess.BIG_ENDIAN)
+    token           = fields.StructField('B', default=0x0e)
     message_body    = fields.StringField(Dependency('message_size'))
-    checksum        = fields.StructField('B', formatter='%02x')
+    checksum        = fields.StructField('B')
+
 
 '''
 Application layer
 '''
+
+
 class STK500CmdSignOnResponse(Chunk):
     answer_id = fields.StructField('B')
     status    = fields.StructField('B')

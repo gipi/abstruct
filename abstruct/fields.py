@@ -1,5 +1,6 @@
 import logging
 import struct
+import copy
 from enum import Enum, Flag, auto
 
 from .enum import Compliant
@@ -15,44 +16,61 @@ class Endianess(Enum):
     NATIVE        = auto()
 
 
-'''
-The ratio here is that since the instances at which are attacched
-the fields need to have separate instances to interact with, we need
-the XFIeld() associated to the chunk to be constructor for the XChunk().
-'''
+class FieldDescriptor(object):
+
+    def __init__(self, field_instance, field_name):
+        self.field = field_instance
+        self.field.name = field_name
+
+    def __get__(self, instance, type=None):
+        data = instance.__dict__
+
+        if self.field.name in data:
+            return data[self.field.name]
+        else:
+            new_field = self.field.create(father=instance)
+            data[self.field.name] = new_field
+            return data[self.field.name]
+
+    def __set__(self, instance, value):
+        data = instance.__dict__
+
+        # if the value is the same type then set as it is
+        if isinstance(value, self.field.__class__):
+            value.father = instance
+            value.name = self.field.name
+            data[self.field.name] = value
+        # otherwise delegate to the field
+        else:
+            data[self.field.name].set(value)
 
 
-class Field(object):
-
-    real = None
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
+class FieldBase(object):
 
     def contribute_to_chunk(self, cls, name):
-        cls._meta.fields.append((name, self))
+        if not getattr(cls, name, None):
+            setattr(cls, name, FieldDescriptor(self, name))
+        else:
+            raise AttributeError(f'field {name} is already present in class {cls.__name__}')
 
-    def __call__(self, father, name=None):
-        if not self.real:
-            raise AttributeError('property \'real\' is None')
-        return self.real(*self.args, name=name, father=father, **self.kwargs)
+    def create(self, father):
+        instance = copy.deepcopy(self)
+        instance.father = father
+        return instance
 
 
-class RealField(object):
+class Field(FieldBase):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, little_endian=True, formatter=None, compliant=Compliant.INHERIT, is_magic=False, **kwargs):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
+        super().__init__()
         self._resolve = True  # TODO: create contextmanager
-        self._phase = ChunkPhase.INIT
         self.name = name
         self.father = father
         self.default = default
         self.offset = offset
         self._value = None
         self._data = None
-        self.little_endian = little_endian
         self.endianess = endianess
-        self.formatter = formatter if formatter else '%s'
         self.compliant = compliant
         self.is_magic = is_magic
         self.logger = logging.getLogger(__name__)
@@ -64,7 +82,7 @@ class RealField(object):
         pass
 
     def __str__(self):
-        return self.formatter % (self.value)
+        return str(self.value)
 
     def __getattribute__(self, name):
         '''If the field is a Field then return directly the 'value' attribute'''
@@ -84,18 +102,19 @@ class RealField(object):
         try:
             # the try block is needed in order to catch initialization of variables
             # for the first time
+            # try to see if is a property
+            field = getattr(self.__class__, name, None)
+            # FIXME: doesn't work if @x.setter is used, do you know why?
+            if isinstance(field, property) and field.fset is not None:
+                return field.fset(self, value)
             field = super().__getattribute__(name)
             self.__dict__['_resolve'] = True
             if isinstance(field, Dependency):
-                self.logger.debug('set for field \'%s\' the value \'%s\'depends on' % (name, value))
+                self.logger.debug('set for field \'%s\' the value \'%s\' depends on' % (name, value))
                 real_field = field.resolve_field(self)
                 real_field.value = value
                 return
 
-            # try to see if is a property
-            field = getattr(self.__class__, name, None)
-            if isinstance(field, property) and field.fset is not None:
-                field.fset(self, value)
         except AttributeError:
             pass
         finally:
@@ -115,10 +134,6 @@ class RealField(object):
             instance = instance.father
 
         return False
-
-    @property
-    def phase(self):
-        return self._phase
 
     def __set_offset(self, value):
         self.__offset = value
@@ -174,12 +189,12 @@ class RealField(object):
         raise NotImplemented('you need to implement this in the subclass')
 
 
-class RealStructField(RealField):
+class StructField(Field):
 
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
+        super().__init__(default=default if not equals_to else equals_to, **kw)
         self.format = format
         self.enum = enum
-        super().__init__(default=default if not equals_to else equals_to, **kw)
 
     def __repr__(self):
         if not self.enum:
@@ -193,7 +208,7 @@ class RealStructField(RealField):
         return formatter % (self.value if not self.enum else self.value.value,)
 
     def get_format(self):
-        return '%s%s' % ('<' if self.little_endian else '>', self.format)
+        return '%s%s' % ('<' if self.endianess == Endianess.LITTLE_ENDIAN else '>', self.format)
 
     def size(self):
         return struct.calcsize(self.get_format())
@@ -220,7 +235,8 @@ class RealStructField(RealField):
             self.value = struct.unpack(self.get_format(), self._data)[0]
         except struct.error as e:
             self.logger.error(e)
-            raise UnpackException(chain=[])
+            exc = MagicException if self.is_compliant(Compliant.MAGIC) else UnpackException
+            raise exc(chain=[])
 
     def unpack_enum(self):
         if self.enum:
@@ -249,16 +265,12 @@ class RealStructField(RealField):
                 raise MagicException(chain=[])
 
 
-class StructField(Field):
-    real = RealStructField
-
-
 # TODO: understand if it is needed to separate from Binary and alphanumeric strings.
-class RealStringField(RealField):
+class StringField(Field):
 
     def __init__(self, n=0, **kw):
-        super().__init__(**kw)
         self.n = n
+        super().__init__(**kw)
 
     def __repr__(self):
         return '<%s(%s)>' % (self.__class__.__name__, repr(self.value))
@@ -293,38 +305,18 @@ class RealStringField(RealField):
             raise MagicException(chain=None)
 
 
-class StringField(Field):
-    '''This in an array of "n" char'''
-    real = RealStringField
-
-
-class StringNullTerminatedField(Field):
-
-    def __init__(self, default='\x00', **kw):
-        super().__init__(default=default, **kw)
-
-    def init(self, default):
-        self.value = default
-
-    def pack(self, stream=None, relayout=True):
-        return self.value
-
-
-class RealArrayField(RealField):
+class ArrayField(Field):
     '''Un/Pack an array of Chunks.
 
     You can indicate an explicite number of elements via the parameter named "n"
     or you can indicate with a callable returning True which element is the terminator
     for the list via the parameter named "canary".
-
-    default_cls can be a single (args, kwargs) for item or a list
     '''
 
-    def __init__(self, field_cls, n=0, canary=None, default_cls=None, **kw):
+    def __init__(self, field_cls, n=0, canary=None, **kw):
         self.field_cls = field_cls
         self._n = n
         self._canary = canary
-        self.default_cls = default_cls
 
         if n and not (isinstance(n, Dependency) or isinstance(n, int)):
             raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
@@ -332,7 +324,7 @@ class RealArrayField(RealField):
         if 'default' not in kw:
             kw['default'] = []
             if isinstance(n, int) and n > 0:
-                kw['default'] = [self.field_cls()] * n
+                kw['default'] = [self.instance_element()] * n
 
         super().__init__(**kw)
 
@@ -345,9 +337,6 @@ class RealArrayField(RealField):
     def _set_value(self, value):
         super()._set_value(value)
         self._n = len(self.value)
-
-    def count(self):
-        return self.n
 
     @property
     def raw(self):
@@ -364,15 +353,17 @@ class RealArrayField(RealField):
 
         return size
 
-    @property
-    def n(self):
+    def get_n(self):
         return self._n
 
-    @n.setter
     def set_n(self, n):
-        import pdb; pdb.set_trace()
         old_n = self._n
         self._n = n
+
+        # FIXME: it's an hack
+        self._value = self._value[:n]
+
+    n = property(fget=get_n, fset=set_n)
 
     def relayout(self, offset=0):
         super().relayout(offset=offset)
@@ -392,7 +383,7 @@ class RealArrayField(RealField):
         return data  # FIXME
 
     def instance_element(self):
-        return self.field_cls(father=self)  # pass the father so that we don't lose the hierarchy
+        return self.field_cls.create(father=self)  # pass the father so that we don't lose the hierarchy
 
     def unpack_element(self, element, stream):
         element.unpack(stream)
@@ -404,29 +395,31 @@ class RealArrayField(RealField):
     def unpack(self, stream):
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
-        self.value = []  # reset the fields already present
-        real_n = self.n if self.n is not None else 100  # FIXME
-        for idx in range(real_n):
+        self._value = []  # reset the fields already present
+        idx = 0
+        while True:
             element = self.instance_element()
-            self.logger.debug('%s: unnpacking item %d' % (self.__class__.__name__, idx))
+            self.logger.debug('%s: unpacking item %d' % (self.__class__.__name__, idx))
 
             element_offset = stream.tell()
             self.unpack_element(element, stream)
             element.offset = element_offset
 
-            self.append(element)
+            self._value.append(element)
 
+            idx += 1
+
+            # "canary" has precedence over "n"
             if self._canary is not None:
                 if self._canary(element):
-                    self.n = idx
+                    self._n = idx
+                    break
+            else:
+                if self._n == idx:
                     break
 
 
-class ArrayField(Field):
-    real = RealArrayField
-
-
-class RealSelectField(RealField):
+class SelectField(Field):
     '''Allow to select the kind of final field based on condition
     in the parent chunk. You need to pass the name of the field
     to use as key and a dictionary with the mapping between type
@@ -474,7 +467,7 @@ class RealSelectField(RealField):
         self.logger.debug('resolving key \'%s\'' % self._key)
         field_key = getattr(self.father, self._key)
 
-        key = field_key.value if field_key.value in self._mapping else RealSelectField.Type.DEFAULT
+        key = field_key.value if field_key.value in self._mapping else SelectField.Type.DEFAULT
 
         self.logger.debug('using key to \'%s\' (original was \'%s\')' % (key, field_key.value))
 
@@ -487,14 +480,7 @@ class RealSelectField(RealField):
         self.logger.debug(f'unpacked {self._field!r}')
 
 
-class SelectField(Field):
-    '''
-    This field can be used like an array
-    '''
-    real = RealSelectField
-
-
-class RealPaddingField(RealField):
+class PaddingField(Field):
     '''Takes as much stream as possible'''
 
     def unpack(self, stream):
@@ -502,7 +488,3 @@ class RealPaddingField(RealField):
 
     def init(self):
         pass
-
-
-class PaddingField(Field):
-    real = RealPaddingField

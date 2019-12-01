@@ -88,7 +88,7 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(isinstance(d._meta, Meta))
         self.assertEqual(len(d._meta.fields), 1)
         self.assertTrue(hasattr(d, 'field'))
-        self.assertTrue(isinstance(d.field, fields.RealStructField))
+        self.assertTrue(isinstance(d.field, fields.StructField))
         self.assertEqual(len(d2._meta.fields), 1)
 
     def test_inheritance(self):
@@ -107,7 +107,7 @@ class CoreTests(unittest.TestCase):
         fields_son = son.get_fields()
 
         self.assertEqual(len(fields_son), 3)
-        self.assertEqual([_[0] for _ in fields_son], [
+        self.assertEqual([_ for _ in fields_son], [
             'field_a', 'field_b', 'field_c',
         ])
 
@@ -115,20 +115,17 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(son.field_b.value, 0x04030201, f'field_b is {son.field_b.value:x}')
         self.assertEqual(son.field_c.value, field_c_value)
 
-    def test_chunk(self):
+    def test_field_from_chunk(self):
         class Dummy(Chunk):
             field = fields.StructField('i')
 
         class DummyContainer(Chunk):
-            dummy = fields.DummyField()
+            dummy = Dummy()
 
         d = DummyContainer()
 
         self.assertTrue(hasattr(d, 'dummy'))
         self.assertTrue(hasattr(d.dummy, 'field'))
-        self.assertEqual(d.phase, ChunkPhase.DONE)
-        self.assertEqual(d.dummy.phase, ChunkPhase.DONE)
-        self.assertEqual(d.dummy.field.phase, ChunkPhase.INIT)
 
     def test_offset_basic(self):
         '''Test that the offset is handled correctly in basic case'''
@@ -197,7 +194,7 @@ class CoreTests(unittest.TestCase):
             b = fields.StructField('H')
 
         class Father(Chunk):
-            dummy = fields.DummyField()
+            dummy = Dummy()
             c     = fields.StringField(0x10)
 
         father = Father()
@@ -303,6 +300,10 @@ class FieldsTests(unittest.TestCase):
         self.assertEqual(df.field_wo_default.value, 0)
         self.assertEqual(df.field_w_default.value, 0xdead)
 
+        df = DummyFile(b'\x01\x02\x03\x04\x05\x06\x07\x08')
+        self.assertEqual(df.field_wo_default.value, 0x04030201)
+        self.assertEqual(df.field_w_default.value, 0x08070605)
+
     def test_bitfield(self):
         class WhateverEnum(Enum):
             pass
@@ -313,7 +314,7 @@ class FieldsTests(unittest.TestCase):
             field_b = fields.StructField("I")
 
         class DummyFile(Chunk):
-            chunks = fields.ArrayField(DummyChunk, n=3)
+            chunks = fields.ArrayField(DummyChunk(), n=3)
 
         d = DummyFile()
 
@@ -325,14 +326,38 @@ class FieldsTests(unittest.TestCase):
         d.chunks.n = 0
         self.assertEqual(len(d.chunks.value), 0, 'check change in n -> change in array')
 
+    def test_array_w_dependency(self):
+        class Dummy(Chunk):
+            count = fields.StructField('I')
+            items = fields.ArrayField(fields.StructField('I'), n=Dependency('.count'))
+
+        d = Dummy(b'\x05\x00\x00\x00' + b'A' * 4 + b'B' * 4 + b'C' * 4 + b'D' * 4 + b'E' * 4)
+
+        self.assertEqual(d.count.value, 5)
+        self.assertEqual(d.items.n, 5)
+        self.assertEqual([_.value for _ in d.items.value], [
+            0x41414141, 0x42424242, 0x43434343, 0x44444444, 0x45454545,
+        ])
+
+        # try to change 'n' and see what happens
+        d.count.value = 3
+        self.assertEqual(d.count.value, 3)
+        self.assertEqual(d.items.n, 3)
+        # self.assertEqual(len(d.items), 3)
+
+        d.items.n = 4
+        self.assertEqual(d.count.value, 4)
+        self.assertEqual(d.items.n, 4)
+        self.assertEqual(len(d.items), 4)
+
     def test_select(self):
         class DummyType(Flag):
             FIRST = 0
             SECOND = 1
 
         type2field = {
-            DummyType.FIRST: (fields.RealStructField, ('I', ), {}),
-            DummyType.SECOND: (fields.RealStringField, (0x10, ), {}),
+            DummyType.FIRST: (fields.StructField, ('I', ), {}),
+            DummyType.SECOND: (fields.StringField, (0x10, ), {}),
         }
 
         class DummyChunk(Chunk):
@@ -358,15 +383,16 @@ class FieldsTests(unittest.TestCase):
     def test_dependency(self):
         class DummyChunk(Chunk):
             magic = fields.StringField(n=5, default=b"HELLO")
-            garbage = fields.StringField(0x10)
-            dummy_size = fields.StructField('I', equals_to=Dependency('size'))
+            length = fields.StructField('I')
+            garbage = fields.StringField(Dependency('.length'))
 
         dummy = DummyChunk()
 
-        self.assertEqual(dummy.dummy_size.value, 25)
+        self.assertEqual(dummy.length.value, 0, f'check default \'length\' is zero')
+        self.assertEqual(dummy.garbage.value, b'', f'check the starting string is empty')
 
         dummy.garbage.value = b'ABCD'
-        self.assertEqual(dummy.dummy_size.value, 13)
+        self.assertEqual(dummy.length.value, 4, f'check we have an updated \'length\' field')
 
     def test_crc32(self):
         class DummyChunk(Chunk):
@@ -377,7 +403,7 @@ class FieldsTests(unittest.TestCase):
             crc   = CRCField([
                 'dataA',
                 'dataC',
-            ], formatter='0x%08x')
+            ])
 
         dummy = DummyChunk()
         dummy.dataA.value = 0x01020304
@@ -393,7 +419,7 @@ class ELFTest(unittest.TestCase):
 
     def test_string_table(self):
         table = b'\x00ABCD\x00EFGH\x00'
-        string_table = elf_fields.RealSectionStringTable(size=len(table))
+        string_table = elf_fields.SectionStringTable(size=len(table))
 
         string_table.unpack(Stream(table))
         self.assertEqual(len(string_table.value), 3)
@@ -403,7 +429,7 @@ class ELFTest(unittest.TestCase):
             'EFGH',
         ])
 
-        string_table = elf_fields.RealSectionStringTable(default=['', 'miao', 'bau'])
+        string_table = elf_fields.SectionStringTable(default=['', 'miao', 'bau'])
         s = Stream(b'')
         string_table.pack(s)
 
@@ -516,7 +542,7 @@ class ELFTest(unittest.TestCase):
         print('\n'.join(
             ["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str)
                 for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
-        self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.RealSectionStringTable()))
+        self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.SectionStringTable()))
 
         # check if the string table is dumped correctly
         index_section_string_table = elf.header.e_shstrndx.value
@@ -527,24 +553,26 @@ class ELFTest(unittest.TestCase):
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''
         data_empty = b''
-        data = b'\x0f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
-        data = b'miao' * 16
+        data = b'\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
 
         empty_success = False
         try:
-            ElfFile(data_empty)
+            elf = ElfFile(data_empty, compliant=Compliant.MAGIC)
         except MagicException as e:
             empty_success = True
         except Exception as e:
             logger.error(e)
 
-        self.assertTrue(empty_success)
+        self.assertTrue(empty_success, 'check empty file causes exception')
+
+        malformed_success = False
         try:
             elf = ElfFile(data, compliant=Compliant.ENUM | Compliant.MAGIC)
         except AbstructException as e:
+            malformed_success = True
             logger.debug('error during parsing at field \'%s\'' % '.'.join(e.chain[::-1]))
 
-        elf = ElfFile(data, complaint=Compliant.MAGIC)
+        self.assertTrue(malformed_success, 'check ELF with magic but body malformed causes exceptiocheck ELF with magic but body malformed causes exceptionn')
 
 
 class STK500Tests(unittest.TestCase):

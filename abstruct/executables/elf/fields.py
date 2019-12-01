@@ -43,7 +43,7 @@ class ElfIdent(Chunk):
 
 # TODO: create BoolFromDependency that use the EI_CLASS from the ELF header
 #       and generates the endianess to pass via the little_endian parameter.
-class RealElf_DataType(fields.RealStructField):
+class Elf_DataType(fields.StructField):
     '''Wrapper for all the datatype that resolves internally to the EI_CLASS'''
 
     def __init__(self, **kwargs):
@@ -65,7 +65,7 @@ class RealElf_DataType(fields.RealStructField):
         return fmt
 
 
-class RealElf_Addr(RealElf_DataType):
+class Elf_Addr(Elf_DataType):
     '''Unsigned program address'''
 
     MAP_CLASS_TYPE = {
@@ -74,7 +74,7 @@ class RealElf_Addr(RealElf_DataType):
     }
 
 
-class RealElf_Off(RealElf_DataType):
+class Elf_Off(Elf_DataType):
     '''Unsigned file offset'''
 
     MAP_CLASS_TYPE = {
@@ -83,7 +83,7 @@ class RealElf_Off(RealElf_DataType):
     }
 
 
-class RealElf_Sword(RealElf_DataType):
+class Elf_Sword(Elf_DataType):
     '''Wrapper for the fundamental datatype of the ELF format'''
 
     MAP_CLASS_TYPE = {
@@ -92,7 +92,7 @@ class RealElf_Sword(RealElf_DataType):
     }
 
 
-class RealElf_Xword(RealElf_DataType):
+class Elf_Xword(Elf_DataType):
     ''''''
 
     MAP_CLASS_TYPE = {
@@ -101,7 +101,7 @@ class RealElf_Xword(RealElf_DataType):
     }
 
 
-class RealElf_Sxword(RealElf_DataType):
+class Elf_Sxword(Elf_DataType):
 
     MAP_CLASS_TYPE = {
         ElfEIClass.ELFCLASS32: 'I',  # This mean Elf_Sword for 32
@@ -109,7 +109,7 @@ class RealElf_Sxword(RealElf_DataType):
     }
 
 
-class RealElf_Word(RealElf_DataType):
+class Elf_Word(Elf_DataType):
     '''Wrapper for the fundamental datatype of the ELF format'''
 
     MAP_CLASS_TYPE = {
@@ -118,7 +118,7 @@ class RealElf_Word(RealElf_DataType):
     }
 
 
-class RealElf_Half(RealElf_DataType):
+class Elf_Half(Elf_DataType):
     '''Wrapper for the fundamental datatype of the ELF format'''
 
     MAP_CLASS_TYPE = {
@@ -138,36 +138,8 @@ class ELFInterpol(Chunk):  # TODO: use StringField
         self.value = stream.read(self._size)
 
 
-class Elf_Addr(fields.StructField):
-    real = RealElf_Addr
-
-
-class Elf_Off(fields.StructField):
-    real = RealElf_Off
-
-
-class Elf_Sword(fields.Field):
-    real = RealElf_Sword
-
-
-class Elf_Xword(fields.Field):
-    real = RealElf_Xword
-
-
-class Elf_Word(fields.Field):
-    real = RealElf_Word
-
-
-class Elf_Sxword(fields.Field):
-    real = RealElf_Sxword
-
-
-class Elf_Half(fields.Field):
-    real = RealElf_Half
-
-
 # TODO: maybe better subclass of Chunk with ArrayField as unique element?
-class RealSectionStringTable(fields.RealField):
+class SectionStringTable(fields.Field):
     '''
     There are three string tables identified by their section name
 
@@ -210,11 +182,7 @@ class RealSectionStringTable(fields.RealField):
         stream.write(value)
 
 
-class SectionStringTable(fields.Field):
-    real = RealSectionStringTable
-
-
-class RealElfRelocationInfoField(RealElf_Sword):
+class ElfRelocationInfoField(Elf_Sword):
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(sym={self.sym}, type={self.type})'
@@ -237,11 +205,7 @@ class RealElfRelocationInfoField(RealElf_Sword):
         self.type = self.get_relocation_type()
 
 
-class ElfRelocationInfoField(fields.StructField):
-    real = RealElfRelocationInfoField
-
-
-class RealSymbolInfoField(fields.RealStructField):
+class SymbolInfoField(fields.StructField):
 
     def __init__(self, *args, **kwargs):
         super().__init__('B', *args, **kwargs)
@@ -256,10 +220,6 @@ class RealSymbolInfoField(fields.RealStructField):
         self.type = ElfSymbolType(self.value & 0x0f)
 
 
-class SymbolInfoField(fields.StructField):
-    real = RealSymbolInfoField
-
-
 class SymbolTableEntry(Chunk):
 
     def __init__(self, *args, **kwargs):
@@ -268,11 +228,10 @@ class SymbolTableEntry(Chunk):
 
     def get_fields(self):  # TODO: factorize this code in more pythonic way
         original_fields = super().get_fields()
-        # FIXME: here we need to call resolve() by ourself since it's not a field
-        if self._elf_class.resolve(self) == ElfEIClass.ELFCLASS32:
+        if self._elf_class == ElfEIClass.ELFCLASS32:
             return original_fields
 
-        ORDERING_64 = [
+        return [
             'st_name',
             'st_info',
             'st_other',
@@ -280,15 +239,6 @@ class SymbolTableEntry(Chunk):
             'st_value',
             'st_size',
         ]
-        modified_fields = []
-        # FIXME: this is shit
-        for name in ORDERING_64:
-            for _ in original_fields:
-                if _[0] == name:
-                    modified_fields.append(_)
-                    break
-
-        return modified_fields
 
     st_name  = Elf_Word()
     st_value = Elf_Addr()
@@ -298,10 +248,10 @@ class SymbolTableEntry(Chunk):
     st_shndx = Elf_Half()
 
 
-class SymbolTable(fields.RealArrayField):
+class SymbolTable(fields.ArrayField):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(SymbolTableEntry, *args, **kwargs)
+        super().__init__(SymbolTableEntry(), *args, **kwargs)
 
 
 class DynamicEntry(Chunk):
@@ -309,10 +259,10 @@ class DynamicEntry(Chunk):
     d_un  = Elf_Xword()  # FIXME: create UnionField
 
 
-class RealElfDynamicSegmentField(fields.RealArrayField):
+class ElfDynamicSegmentField(fields.ArrayField):
 
     def __init__(self, *args, size=None, father=None, **kwargs):
-        super().__init__(DynamicEntry, *args, n=int(size / DynamicEntry(father=father).size()), father=father, **kwargs)
+        super().__init__(DynamicEntry(), *args, n=int(size / DynamicEntry(father=father).size()), father=father, **kwargs)
         self._dict = {}
 
     def _resolve_entry_DT_NEEDED(self, entry, elf):
@@ -444,7 +394,7 @@ class RealElfDynamicSegmentField(fields.RealArrayField):
         return field
 
 
-class RealELFSectionsField(fields.RealField):
+class ELFSectionsField(fields.Field):
     '''Handles the data pointed by an entry of the Section header
     TODO: how do entry from this and the corresponding header behave wrt each other?
           if we remove the header, we remove the entry and vice versa?
@@ -481,7 +431,7 @@ class RealELFSectionsField(fields.RealField):
                 self.logger.debug('unpacking string table')
                 # we need to unpack at most sh_size bytes
                 stream.seek(field.sh_offset.value)
-                section = RealSectionStringTable(size=field.sh_size.value)
+                section = SectionStringTable(size=field.sh_size.value)
                 section.unpack(stream)
                 self.value.append(section)
             elif section_type == ElfSectionType.SHT_SYMTAB:
@@ -526,13 +476,13 @@ class RealELFSectionsField(fields.RealField):
             else:
                 self.logger.debug('unpacking unhandled data of type %s' % section_type)
                 stream.seek(field.sh_offset.value)
-                section = fields.RealStringField(field.sh_size.value)
+                section = fields.StringField(field.sh_size.value)
                 section.unpack(stream)
 
                 self.value.append(section)
 
 
-class RealELFSegmentsField(fields.RealField):
+class ELFSegmentsField(fields.Field):
     '''Handles the data pointed by an entry of the program header
     TODO: how do entry from this and the corresponding header behave wrt each other?
           if we remove the header, we remove the entry and vice versa?
@@ -570,7 +520,7 @@ class RealELFSegmentsField(fields.RealField):
 
     def _handle_unpack_PT_PHDR(self, entry):
         '''It handles the header, simply using a StringField'''
-        field = fields.RealStringField(n=entry.p_filesz.value)
+        field = fields.StringField(n=entry.p_filesz.value)
 
         return field
 
@@ -580,12 +530,12 @@ class RealELFSegmentsField(fields.RealField):
         return interp
 
     def _handle_unpack_PT_DYNAMIC(self, entry):
-        dyn = RealElfDynamicSegmentField(offset=entry.p_offset.value, size=entry.p_filesz.value, father=self.father)
+        dyn = ElfDynamicSegmentField(offset=entry.p_offset.value, size=entry.p_filesz.value, father=self.father)
 
         return dyn
 
     def _handle_unpack_undefined(self, entry):
-        field = fields.RealStringField(offset=entry.p_offset.value, n=entry.p_filesz.value)
+        field = fields.StringField(offset=entry.p_offset.value, n=entry.p_filesz.value)
 
         return field
 
@@ -613,11 +563,3 @@ class RealELFSegmentsField(fields.RealField):
         self.value = []  # reset the entries
         for field_header in self.header:
             self.unpack_segment(stream, field_header)
-
-
-class ELFSectionsField(fields.Field):
-    real = RealELFSectionsField
-
-
-class ELFSegmentsField(fields.Field):
-    real = RealELFSegmentsField

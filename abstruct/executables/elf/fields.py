@@ -376,6 +376,9 @@ class ElfDynamicSegmentField(fields.ArrayField):
     def __getitem__(self, key):
         return self._dict[key]
 
+    def __contains__(self, item):
+        return item in self._dict
+
     def get(self, typeOf):
         '''It returns something to which this instance points to'''
         element = self[typeOf]

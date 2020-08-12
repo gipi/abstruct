@@ -14,7 +14,7 @@ from .executables.elf import (
 from .executables.elf.enum import (
     ElfType,
     ElfMachine,
-    ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType,
+    ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType, ElfDynamicTagType,
 )
 
 from .images.png import (
@@ -549,6 +549,9 @@ class ELFTest(unittest.TestCase):
         section_string_table = elf.sections_header.value[index_section_string_table]
         print(section_string_table.pack())
         print(elf.segments.get_segment_for_address(0x00001ef8))
+
+        print(elf.dynamic)
+        print(elf.dynamic[ElfDynamicTagType.DT_NEEDED])
 
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''

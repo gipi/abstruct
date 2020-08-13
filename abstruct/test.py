@@ -552,6 +552,9 @@ class ELFTest(unittest.TestCase):
 
         print(elf.dynamic)
         print(elf.dynamic[ElfDynamicTagType.DT_NEEDED])
+        print(elf.dynamic.get(ElfDynamicTagType.DT_NEEDED))
+        print(elf.dynamic.get(ElfDynamicTagType.DT_REL))
+        print(elf.dynamic.get(ElfDynamicTagType.DT_PLTREL))
 
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''

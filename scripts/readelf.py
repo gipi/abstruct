@@ -113,9 +113,13 @@ if __name__ == '__main__':
         print(needed)
         print(elf.dynamic.get(ElfDynamicTagType.DT_NEEDED))
 
-        if ElfDynamicTagType.DT_REL in elf.dynamic:
-            print(elf.dynamic.get(ElfDynamicTagType.DT_REL))
 
+        if ElfDynamicTagType.DT_REL in elf.dynamic:
             rels = elf.dynamic.get(ElfDynamicTagType.DT_REL)
+            if rels:
+                dump_reloc(rels, elf.dynamic)
+
+        if ElfDynamicTagType.DT_RELA in elf.dynamic:
+            rels = elf.dynamic.get(ElfDynamicTagType.DT_RELA)
             if rels:
                 dump_reloc(rels, elf.dynamic)

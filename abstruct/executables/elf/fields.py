@@ -182,29 +182,6 @@ class SectionStringTable(fields.Field):
         stream.write(value)
 
 
-class ElfRelocationInfoField(Elf_Sword):
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}(sym={self.sym}, type={self.type})'
-
-    def get_relocation_type_class(self):
-        from . import reloc
-        self._arch = Dependency('@ElfFile.header.e_machine')
-        return {
-            ElfMachine.EM_386: reloc.ElfRelocationType_i386,
-        }[self._arch]
-
-    def get_relocation_type(self):
-        '''The relocation type is HIGHLY dependent on architecture'''
-        return self.get_relocation_type_class()(self.value & 0xff)
-
-    def unpack(self, stream):
-        super().unpack(stream)
-
-        self.sym  = self.value >> 8
-        self.type = self.get_relocation_type()
-
-
 class SymbolInfoField(fields.StructField):
 
     def __init__(self, *args, **kwargs):
@@ -296,22 +273,41 @@ class ElfDynamicSegmentField(fields.ArrayField):
         return symbol_table
 
     def _resolve_entry_DT_REL(self, entry, elf):
-        from .reloc import ElfRelocationTable
-        rel_table_addr = self[ElfDynamicTagType.DT_REL].d_un.value
+        from .reloc import ElfRelTable
+        rel_table_addr = entry.d_un.value
         rel_table_size = self[ElfDynamicTagType.DT_RELSZ].d_un.value
         segment = elf.segments.get_segment_for_address(rel_table_addr)
 
         raw = segment.raw
         offset = rel_table_addr - segment.vaddr
 
-        rel_table = ElfRelocationTable(size=rel_table_size, father=self.father)
+        rel_table = ElfRelTable(size=rel_table_size, father=self.father)
         stream = Stream(raw)
         stream.seek(offset)
         rel_table.unpack(stream)
 
         return rel_table
 
-    def _resolve_entry_default(entry, elf):
+    def _resolve_entry_DT_RELA(self, entry, elf):
+        from .reloc import ElfRelaTable
+        rel_table_addr = entry.d_un.value
+        rel_table_size = self[ElfDynamicTagType.DT_RELASZ].d_un.value
+        segment = elf.segments.get_segment_for_address(rel_table_addr)
+
+        raw = segment.raw
+        offset = rel_table_addr - segment.vaddr
+
+        rela_table = ElfRelaTable(size=rel_table_size, father=self.father)
+        stream = Stream(raw)
+        stream.seek(offset)
+        rela_table.unpack(stream)
+
+        return rela_table
+
+    def _resolve_entry_DT_PLTREL(self, entry, elf):
+        return ElfDynamicTagType(entry.d_un.value)
+
+    def _resolve_entry_default(self, entry, elf):
         self.logger.debug('not implemented')
         return None
 
@@ -462,7 +458,7 @@ class ELFSectionsField(fields.Field):
 
                 self.value.append(section)
             elif section_type == ElfSectionType.SHT_REL:
-                from .reloc import ElfRelocationTable
+                from .reloc import ElfRelTable
                 from .reloc import ElfRelEntry
                 table_size = field.sh_size.value
 
@@ -472,7 +468,7 @@ class ELFSectionsField(fields.Field):
 
                 stream.seek(field.sh_offset.value)
 
-                section = ElfRelocationTable(n=n, father=self)
+                section = ElfRelTable(n=n, father=self)
                 section.unpack(stream)
 
                 self.value.append(section)

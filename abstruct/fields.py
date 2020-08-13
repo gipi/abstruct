@@ -267,23 +267,23 @@ class StructField(Field):
 
 # TODO: understand if it is needed to separate from Binary and alphanumeric strings.
 class StringField(Field):
+    """Represent a contiguous chunk of bytes."""
 
     def __init__(self, n=0, **kw):
-        self.n = n
         super().__init__(**kw)
+        self._n = n
 
     def __repr__(self):
         return '<%s(%s)>' % (self.__class__.__name__, repr(self.value))
 
-    def init(self):
-        self.default = b'\x00' * self.n if not self.default else self.default
+    def __len__(self):
+        return len(self.value)
 
-    def _set_value(self, value):
-        super()._set_value(value)
-        self.n = len(self.value)
+    def init(self):
+        self.default = b'\x00' * self._n if not self.default else self.default
 
     def size(self):
-        return self.n
+        return len(self)
 
     @property
     def raw(self):
@@ -299,7 +299,7 @@ class StringField(Field):
         return stream.obj.getvalue()
 
     def unpack(self, stream):
-        self.value = stream.read(self.n)
+        self.value = stream.read(self._n)
 
         if self.is_magic and self.value != self.default:
             raise MagicException(chain=None)

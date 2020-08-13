@@ -73,12 +73,12 @@ class SegmentHeader(Chunk):
         super().__init__(*args, **kwargs)
         self._elf_class = Dependency('header.e_ident.EI_CLASS')
 
-    def get_fields(self):
+    def get_fields(self) -> List[Tuple[str, Field]]:
         original_fields = super().get_fields()
         if self._elf_class == ElfEIClass.ELFCLASS32:
             return original_fields
 
-        return [
+        order_for_64 = [
             'p_type',
             'p_flags',
             'p_offset',
@@ -89,6 +89,9 @@ class SegmentHeader(Chunk):
             'p_align',
         ]
 
+        dict_orig_fields = dict(original_fields)
+
+        return [(_label, dict_orig_fields[_label]) for _label in order_for_64]
 
     p_type   = elf_fields.Elf_Word(enum=ElfSegmentType, default=ElfSegmentType.PT_NULL)
     p_offset = elf_fields.Elf_Off()

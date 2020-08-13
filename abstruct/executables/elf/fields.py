@@ -5,6 +5,7 @@ Executable and Linkage Format is a file format vastly used in the *nix world.
 
 '''
 import logging
+from typing import List
 
 from ... import fields
 from ...core import Chunk
@@ -203,8 +204,8 @@ class SymbolTableEntry(Chunk):
         super().__init__(*args, **kwargs)
         self._elf_class = Dependency('header.e_ident.EI_CLASS')
 
-    def get_fields(self):  # TODO: factorize this code in more pythonic way
-        original_fields = super().get_fields()
+    def get_ordered_fields_name(self) -> List[str]:
+        original_fields = super().get_ordered_fields_name()
         if self._elf_class == ElfEIClass.ELFCLASS32:
             return original_fields
 

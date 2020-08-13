@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple, List
 
 from .fields import *
 from .enum import Compliant
@@ -92,14 +93,16 @@ class Chunk(Field, metaclass=MetaChunk):
             for name in self.__class__._meta.fields:
                 getattr(self, name).init()  # FIXME: understand init() logic :P
 
-    def get_fields(self):
-        '''It returns a list of couples (name, instance) for each field.'''
+    def get_ordered_fields_name(self) -> List[str]:
         return self._meta.fields
+
+    def get_fields(self) -> List[Tuple[str, Field]]:
+        '''It returns a list of couples (name, instance) for each field.'''
+        return [(_, getattr(self, _)) for _ in self.get_ordered_fields_name()]
 
     def __repr__(self):
         msg = []
-        for field_name in self.get_fields():
-            field = getattr(self, field_name)
+        for field_name, field in self.get_fields():
             msg.append('%s=%s' % (field_name, repr(field)))
         return '<%s(%s)>' % (self.__class__.__name__, ','.join(msg))
 
@@ -134,9 +137,8 @@ class Chunk(Field, metaclass=MetaChunk):
     @property
     def raw(self):
         value = b''
-        for field_name in self.get_fields():
-            field = getattr(self, field_name)
-            value += field.raw
+        for field_name, field_instance in self.get_fields():
+            value += field_instance.raw
 
         return value
 
@@ -147,10 +149,9 @@ class Chunk(Field, metaclass=MetaChunk):
         In practice it's like packing() but it's only interested in the sizes
         of the chunks.'''
         self.offset = offset
-        for field_name in self.get_fields():
+        for field_name, field_instance in self.get_fields():
             self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
 
-            field_instance = getattr(self, field_name)
             offset += field_instance.relayout(offset=offset)
 
         return offset
@@ -171,10 +172,9 @@ class Chunk(Field, metaclass=MetaChunk):
 
         stream = Stream(b'') if not stream else stream
 
-        for field_name in self.get_fields():
+        for field_name, field_instance in self.get_fields():
             self.logger.debug('packing %s.%s' % (self.__class__.__name__, field_name))
 
-            field_instance = getattr(self, field_name)
 
             if field_instance.offset is None:
                 raise AttributeError(f'offset for field named "{field_name}" {field_instance!r} is not defined!')
@@ -204,9 +204,8 @@ class Chunk(Field, metaclass=MetaChunk):
             1. you can have size and offset dependencies
             2. you can enforce dependencies or not
         '''
-        for field_name in self.get_fields():
+        for field_name, field in self.get_fields():
             self.logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
-            field = getattr(self, field_name)
 
             # setup the offset for this chunk
             offset = field.offset

@@ -47,9 +47,9 @@ class Elf_DataType(fields.StructField):
     '''Wrapper for all the datatype that resolves internally to the EI_CLASS'''
 
     def __init__(self, **kwargs):
-        self._elf_class = Dependency('header.e_ident.EI_CLASS')
         kwargs['endianess'] = Dependency('header.e_ident.EI_DATA')
         super().__init__('I', **kwargs)
+        self._elf_class = Dependency('header.e_ident.EI_CLASS')
 
     def get_format(self):
         if not isinstance(self._elf_class, Enum):

@@ -63,6 +63,7 @@ class Field(FieldBase):
 
     def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
         super().__init__()
+        self.logger = logging.getLogger(__name__)
         self._resolve = True  # TODO: create contextmanager
         self.name = name
         self.father = father
@@ -73,7 +74,6 @@ class Field(FieldBase):
         self.endianess = endianess
         self.compliant = compliant
         self.is_magic = is_magic
-        self.logger = logging.getLogger(__name__)
 
         # self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
 

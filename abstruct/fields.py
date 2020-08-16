@@ -392,11 +392,15 @@ class ArrayField(Field):
         self.value.append(element)
         self._n = len(self.value)
 
-    def unpack(self, stream):
+    def unpack(self, stream) -> None:
         '''Unpack the data found in the stream creating new elements,
         the old one, if present, are discarded.'''
         self._value = []  # reset the fields already present
         idx = 0
+
+        if self._canary is None and self._n == 0:  # if we don't have anything to unpack we can exit right away
+            return
+
         while True:
             element = self.instance_element()
             self.logger.debug('%s: unpacking item %d' % (self.__class__.__name__, idx))

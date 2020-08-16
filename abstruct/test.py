@@ -331,6 +331,13 @@ class FieldsTests(unittest.TestCase):
             count = fields.StructField('I')
             items = fields.ArrayField(fields.StructField('I'), n=Dependency('.count'))
 
+        # here we are checking that building from bytes leads to the correct representation
+        # first zero elements
+        d = Dummy(b'\x00\x00\x00\x00')
+        self.assertEqual(d.count.value, 0)
+        self.assertEqual(len(d.items), 0)
+
+        # and then with something to work with
         d = Dummy(b'\x05\x00\x00\x00' + b'A' * 4 + b'B' * 4 + b'C' * 4 + b'D' * 4 + b'E' * 4)
 
         self.assertEqual(d.count.value, 5)

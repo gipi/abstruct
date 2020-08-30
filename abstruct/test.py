@@ -11,6 +11,7 @@ from .executables.elf import (
     SectionHeader,
     elf_fields,
 )
+from .executables.elf.code import _disasm
 from .executables.elf.enum import (
     ElfType,
     ElfMachine,
@@ -549,6 +550,7 @@ class ELFTest(unittest.TestCase):
         print('\n'.join(
             ["0x%x:\t%s\t%s" % (_.address, _.mnemonic, _.op_str)
                 for _ in disasm(elf.get_section_by_name('.text').value, CS_ARCH_X86, CS_MODE_32, start=dot_text_starting_offset)]))
+        print('\n'.join([repr(_) for _ in _disasm(elf.get_section_header_by_address(elf.header.e_entry.value))]))
         self.assertEqual(type(elf.get_section_by_name('.strtab')), type(elf_fields.SectionStringTable()))
 
         # check if the string table is dumped correctly

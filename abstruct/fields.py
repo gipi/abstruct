@@ -297,6 +297,10 @@ class StringField(Field):
     def size(self):
         return len(self)
 
+    def _set_value(self, value) -> None:
+        super()._set_value(value)
+        self._n = len(self.value)
+
     @property
     def raw(self):
         return self.value
@@ -323,6 +327,9 @@ class ArrayField(Field):
     You can indicate an explicite number of elements via the parameter named "n"
     or you can indicate with a callable returning True which element is the terminator
     for the list via the parameter named "canary".
+
+    This class must behave like a list in python, obviously cannot implement all the methods
+    since, for example, slicing what should mean?
     '''
 
     def __init__(self, field_cls, n=0, canary=None, **kw):
@@ -342,12 +349,18 @@ class ArrayField(Field):
     def __repr__(self):
         return f'<{self.__class__.__name__}({self.value!r})>'
 
+    def __getitem__(self, item):
+        return self.value[item]
+
     def __len__(self):
         return len(self.value)
 
     def _set_value(self, value):
         super()._set_value(value)
         self._n = len(self.value)
+
+    def clear(self):
+        self.value.clear()
 
     @property
     def raw(self):
@@ -363,18 +376,6 @@ class ArrayField(Field):
             size += element.size()
 
         return size
-
-    def get_n(self):
-        return self._n
-
-    def set_n(self, n):
-        old_n = self._n
-        self._n = n
-
-        # FIXME: it's an hack
-        self._value = self._value[:n]
-
-    n = property(fget=get_n, fset=set_n)
 
     def relayout(self, offset=0):
         super().relayout(offset=offset)
@@ -400,6 +401,7 @@ class ArrayField(Field):
         element.unpack(stream)
 
     def append(self, element):
+        element.father = self
         self.value.append(element)
         self._n = len(self.value)
 
@@ -412,6 +414,8 @@ class ArrayField(Field):
         if self._canary is None and self._n == 0:  # if we don't have anything to unpack we can exit right away
             return
 
+        count = self._n  # use the actual value since the loop is going to modify it
+
         while True:
             element = self.instance_element()
             self.logger.debug('%s: unpacking item %d' % (self.__class__.__name__, idx))
@@ -420,17 +424,16 @@ class ArrayField(Field):
             self.unpack_element(element, stream)
             element.offset = element_offset
 
-            self._value.append(element)
+            self.append(element)
 
             idx += 1
 
             # "canary" has precedence over "n"
             if self._canary is not None:
                 if self._canary(element):
-                    self._n = idx
                     break
             else:
-                if self._n == idx:
+                if count == idx:
                     break
 
 

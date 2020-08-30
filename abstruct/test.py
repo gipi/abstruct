@@ -310,6 +310,10 @@ class FieldsTests(unittest.TestCase):
             pass
 
     def test_array(self):
+        self.assertTrue('value' in fields.Field.__dict__)
+        print(f"{fields.Field.__dict__['value']=}")
+        self.assertFalse('value' in fields.ArrayField.__dict__)
+
         class DummyChunk(Chunk):
             field_a = fields.StructField("I")
             field_b = fields.StructField("I")
@@ -321,16 +325,30 @@ class FieldsTests(unittest.TestCase):
 
         self.assertTrue(hasattr(d, 'chunks'))
         self.assertEqual(len(d.chunks.value), 3)
-        self.assertEqual(d.chunks.n, 3)
         self.assertTrue(isinstance(d.chunks.value, list))
 
-        d.chunks.n = 0
-        self.assertEqual(len(d.chunks.value), 0, 'check change in n -> change in array')
+        d.chunks.clear()
+        self.assertEqual(len(d.chunks), 0)
 
     def test_array_w_dependency(self):
+        """A more through test to check how a dependency build format should behave"""
         class Dummy(Chunk):
             count = fields.StructField('I')
             items = fields.ArrayField(fields.StructField('I'), n=Dependency('.count'))
+
+        # first we check that the simplest instantiation works
+        d = Dummy()
+        self.assertEqual(d.count.value, 0)
+        self.assertEqual(len(d.items), 0)
+
+        # then we try to USE it
+        canary = 0xabad1d34
+        field_0 = fields.StructField('I')
+        field_0.value = canary
+        d.items.append(field_0)
+        self.assertEqual(len(d.items), 1)
+        self.assertEqual(d.items[0].value, canary)
+        self.assertEqual(d.count.value, 1)
 
         # here we are checking that building from bytes leads to the correct representation
         # first zero elements
@@ -342,21 +360,17 @@ class FieldsTests(unittest.TestCase):
         d = Dummy(b'\x05\x00\x00\x00' + b'A' * 4 + b'B' * 4 + b'C' * 4 + b'D' * 4 + b'E' * 4)
 
         self.assertEqual(d.count.value, 5)
-        self.assertEqual(d.items.n, 5)
+        self.assertEqual(len(d.items), 5)
         self.assertEqual([_.value for _ in d.items.value], [
             0x41414141, 0x42424242, 0x43434343, 0x44444444, 0x45454545,
         ])
 
-        # try to change 'n' and see what happens
+        # here there are two possibilities
+        # 1. an explicit call to a method like update(), but this raises the problem that you don't know the "direction"
+        # 2. the assignment raises the update
         d.count.value = 3
         self.assertEqual(d.count.value, 3)
-        self.assertEqual(d.items.n, 3)
-        # self.assertEqual(len(d.items), 3)
-
-        d.items.n = 4
-        self.assertEqual(d.count.value, 4)
-        self.assertEqual(d.items.n, 4)
-        self.assertEqual(len(d.items), 4)
+        self.assertEqual(len(d.items), 5)
 
     def test_select(self):
         class DummyType(Flag):
@@ -482,7 +496,7 @@ class ELFTest(unittest.TestCase):
         # sections
         SECTIONS_NUMBER = 30
         self.assertEqual(elf.header.e_ehsize.value, 52)
-        self.assertEqual(elf.sections_header.n, SECTIONS_NUMBER)
+        self.assertEqual(len(elf.sections_header), SECTIONS_NUMBER)
         self.assertEqual(elf.header.e_shnum.value, SECTIONS_NUMBER)
         self.assertEqual(elf.header.e_shstrndx.value, 29)
         self.assertEqual(len(elf.sections_header), SECTIONS_NUMBER)

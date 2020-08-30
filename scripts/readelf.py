@@ -78,7 +78,7 @@ def dump_sections(sh, st):
 
 
 def dump_dynamic(dyn):
-    print(f'''Dynamic section at offset 0x{dyn.offset:x} contains {dyn.n} entries:
+    print(f'''Dynamic section at offset 0x{dyn.offset:x} contains {len(dyn)} entries:
   Tag        Type                                          Value''')
     for entry in dyn.value:
         print(f''' {entry.d_tag.value:<35} {entry.d_un}''')

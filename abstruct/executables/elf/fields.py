@@ -252,7 +252,7 @@ class ElfDynamicSegmentField(fields.ArrayField):
         raw = segment.raw
         offset = string_table_addr - segment.vaddr
 
-        string_table = RealSectionStringTable(size=string_table_size)
+        string_table = SectionStringTable(size=string_table_size)
         stream = Stream(raw)
         stream.seek(offset)
         string_table.unpack(stream)
@@ -260,13 +260,15 @@ class ElfDynamicSegmentField(fields.ArrayField):
         return string_table.get(entry.d_un.value)
 
     def _resolve_entry_DT_SYMTAB_(self, entry, elf):
-        symbol_table_addr = self[ElfDynamicTagType.DT_SYMTAB].d_un_value
+        from .reloc import ElfRelocationTable
+        symbol_table_addr = entry.d_un_value
         symbol_table_entry_size = self[ElfDynamicTagType.DT_SYMENT].d_un.value
+        segment = elf.segments.get_segment_for_address(symbol_table_addr)
 
         raw = segment.raw
         offset = symbol_table_addr - segment.vaddr
 
-        symbol_table = ElfRelocationTable(size=rel_table_size, father=self.father)
+        symbol_table = ElfRelocationTable(size=symbol_table_entry_size, father=self.father)
         stream = Stream(raw)
         stream.seek(offset)
         symbol_table.unpack(stream)
@@ -347,7 +349,7 @@ class ElfDynamicSegmentField(fields.ArrayField):
         raw = segment.raw
         offset = str_table_addr - segment.vaddr
 
-        entry = RealSectionStringTable(size=str_table_size, father=self.father)
+        entry = SectionStringTable(size=str_table_size, father=self.father)
 
         stream = Stream(raw)
         stream.seek(offset)
@@ -387,6 +389,7 @@ class ElfDynamicSegmentField(fields.ArrayField):
         try:
             callback = getattr(self, callback_name)
         except AttributeError:
+            self.logger.warning(f'Unable to find a resolver for type {typeOf}')
             callback = self._resolve_entry_default
 
         field = callback(element, elf)

@@ -566,7 +566,10 @@ class ELFTest(unittest.TestCase):
     def test_not_elf(self):
         '''if we try to parse a stream is not an ELF what happens?'''
         data_empty = b''
-        data = b'\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
+        data = (b'\x7f\x45\x4c\x46'  # \x7fELF
+               b'\x03'               # ElfEIClass (this is the wrong value!)
+               b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100
+        )
 
         empty_success = False
         try:

@@ -327,9 +327,6 @@ class ArrayField(Field):
 
     def __init__(self, field_cls, n=0, canary=None, **kw):
         self.field_cls = field_cls
-        self._n = n
-        self._canary = canary
-
         if n and not (isinstance(n, Dependency) or isinstance(n, int)):
             raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
 
@@ -339,6 +336,8 @@ class ArrayField(Field):
                 kw['default'] = [self.instance_element()] * n
 
         super().__init__(**kw)
+        self._n = n
+        self._canary = canary
 
     def __repr__(self):
         return f'<{self.__class__.__name__}({self.value!r})>'

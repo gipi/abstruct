@@ -585,7 +585,7 @@ class ELFTest(unittest.TestCase):
             malformed_success = True
             logger.debug('error during parsing at field \'%s\'' % '.'.join(e.chain[::-1]))
 
-        self.assertTrue(malformed_success, 'check ELF with magic but body malformed causes exceptiocheck ELF with magic but body malformed causes exceptionn')
+        self.assertTrue(malformed_success, 'check ELF with magic but body malformed causes exception')
 
 
 class STK500Tests(unittest.TestCase):

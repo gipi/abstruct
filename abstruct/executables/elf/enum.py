@@ -308,6 +308,12 @@ class ElfSectionType(Enum):
     SHT_HIUSER   = 0xffffffff
 
 
+class ElfSectionFlag(Flag):
+    SHF_WRITE = 0x1
+    SHF_ALLOC = 0x2
+    SHF_EXECINSTR = 0x4
+
+
 class ElfSectionAttributeFlag(Enum):
     SHF_WRITE     = 0x01
     SHF_ALLOC     = 0x02

@@ -27,6 +27,7 @@ from .enum import (
     ElfSectionType,
     ElfSegmentType,
     ElfSegmentFlag,
+    ElfSectionFlag,
 )
 from ... import fields
 
@@ -55,7 +56,7 @@ class ElfHeader(Chunk):
 class SectionHeader(Chunk):
     sh_name      = elf_fields.Elf_Word()
     sh_type      = elf_fields.Elf_Word(enum=ElfSectionType, default=ElfSectionType.SHT_NULL)
-    sh_flags     = elf_fields.Elf_Xword()
+    sh_flags     = elf_fields.Elf_Xword(enum=ElfSectionFlag)
     sh_addr      = elf_fields.Elf_Addr()
     sh_offset    = elf_fields.Elf_Off()
     sh_size      = elf_fields.Elf_Xword()

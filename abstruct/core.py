@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 from .fields import *
 from .enum import Compliant
@@ -99,6 +99,15 @@ class Chunk(Field, metaclass=MetaChunk):
     def get_fields(self) -> List[Tuple[str, Field]]:
         '''It returns a list of couples (name, instance) for each field.'''
         return [(_, getattr(self, _)) for _ in self.get_ordered_fields_name()]
+
+    def get_dependencies(self) -> Dict[str, Dependency]:
+        dep = super().get_dependencies()
+
+        for field_name, field in self.get_fields():
+            for key, value in field.get_dependencies().items():
+                dep.update({f'{field_name}.{key}': value})
+
+        return dep
 
     def __repr__(self):
         msg = []

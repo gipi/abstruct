@@ -2,6 +2,7 @@ import logging
 import struct
 import copy
 from enum import Enum, Flag, auto
+from typing import Dict
 
 from .enum import Compliant
 from .properties import Dependency, ChunkPhase
@@ -64,6 +65,7 @@ class Field(FieldBase):
     def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
         super().__init__()
         self.logger = logging.getLogger(__name__)
+        self._dependencies: Dict[str, Dependency] = {}
         self._resolve = True  # TODO: create contextmanager
         self.name = name
         self.father = father
@@ -98,7 +100,13 @@ class Field(FieldBase):
 
         For more info read the official doc <https://docs.python.org/2/reference/datamodel.html#object.__setattr__>
         '''
+        # remember that this is going to be called at Chunk construction time, so no
+        # initialization is yet done on the parents of this instance, so you CANNOT resolve
+        # dependencies
         self.__dict__['_resolve'] = False
+        if isinstance(value, Dependency):
+            self.logger.debug(f'setting dependency for field \'{name}\': {value}')
+            self._dependencies[name] = value
         try:
             # the try block is needed in order to catch initialization of variables
             # for the first time
@@ -121,6 +129,10 @@ class Field(FieldBase):
             self.__dict__['_resolve'] = True  # FIXME
 
         super().__setattr__(name, value)
+
+    def get_dependencies(self):
+        """Return the dictionary containing as key the field"""
+        return self._dependencies
 
     def is_compliant(self, level):
         '''Returns the compliant'''

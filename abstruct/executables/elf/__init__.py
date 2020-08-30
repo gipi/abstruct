@@ -14,6 +14,8 @@ a more complete reference for the format (take into consideration that exist a g
 reference (linked before) and then each architecture has its own document that address
 specific aspect).
 '''
+from typing import List, Tuple
+
 from ...core import Chunk
 from ...properties import Dependency
 from . import fields as elf_fields
@@ -61,6 +63,16 @@ class SectionHeader(Chunk):
     sh_info      = elf_fields.Elf_Word()
     sh_addralign = elf_fields.Elf_Xword()
     sh_entsize   = elf_fields.Elf_Xword()
+
+    def get_name(self) -> str:
+        """Get the section name directly from the associated string table (if exists)."""
+        # the first parent is the ArrayField
+        elf: ElfFile = self.father.father
+
+        if not isinstance(elf, ElfFile):
+            raise AttributeError(f'I could not find an associated string table to obtain the name')
+
+        return elf.get_name_for_header(self)
 
 
 class SegmentHeader(Chunk):
@@ -125,10 +137,12 @@ class ElfFile(Chunk):
     def dynamic_symbol_names_table(self):
         return self.get_section_by_name('.dynstr')  # FIXME: find this using the dynamic segment
 
+    def get_name_for_header(self, header: SectionHeader) -> str:
+        return self.section_names_table.get(header.sh_name.value)
+
     @property
-    def section_names(self):
-        string_table = self.section_names_table
-        sections_names = [string_table.get(_.sh_name.value) for _ in self.sections_header.value]
+    def section_names(self) -> List[str]:
+        sections_names = [self.get_name_for_header(_) for _ in self.sections_header.value]
 
         return sections_names
 

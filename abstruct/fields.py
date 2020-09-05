@@ -158,7 +158,7 @@ class Field(FieldBase):
 
     offset = property(__get_offset, __set_offset)
 
-    def _set_value(self, value):
+    def _set_value(self, value) -> None:
         self._value = value
 
     def _get_value(self):
@@ -200,7 +200,7 @@ class Field(FieldBase):
         '''
         raise NotImplemented('you need to implement this in the subclass')
 
-    def unpack(self, stream=None):
+    def unpack(self, stream):
         raise NotImplemented('you need to implement this in the subclass')
 
 

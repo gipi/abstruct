@@ -495,6 +495,7 @@ class ELFSegmentsField(fields.Field):
         '''Use the header parameter to get the entries needed'''
         super().__init__(*args, **kwargs)
         self.header = header  # this MUST be a Dependency
+        self.default = [] if 'default' not in kwargs else kwargs['default']
 
     def init(self):
         pass
@@ -505,6 +506,9 @@ class ELFSegmentsField(fields.Field):
             size += field.size()
 
         return size
+
+    def __len__(self):
+        return len(self.value)
 
     def get_segment_for_address(self, addr):
         '''It returns the entry that contains the address specified'''
@@ -518,8 +522,12 @@ class ELFSegmentsField(fields.Field):
 
     def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
-        for field in self.header:
+        raw = b''
+        for field in self.value:
             self.logger.debug('pack()()()')
+            raw += field.pack(stream)  # FIXME: if stream is None
+
+        return raw
 
     def _handle_unpack_PT_PHDR(self, entry):
         '''It handles the header, simply using a StringField'''

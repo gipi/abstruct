@@ -16,7 +16,7 @@ specific aspect).
 '''
 from typing import List, Tuple
 
-from ...core import Chunk
+from ...core import Chunk, Field
 from ...properties import Dependency
 from . import fields as elf_fields
 from .enum import (
@@ -153,6 +153,28 @@ class ElfFile(Chunk):
         index = sections_names.index(name)
 
         return self.sections.value[index]
+
+    def get_section_header_by_address(self, address: int) -> SectionHeader:
+        for section in self.sections_header:
+            if section.sh_addr.value <= address < (section.sh_addr.value + section.sh_size.value):
+                return section
+
+        return None
+
+    def get_section_by_address(self, address: int) -> Tuple[SectionHeader, Field]:
+        result_section_h = None
+        result_section = None
+
+        for idx, section in enumerate(self.sections_header):
+            if section.sh_addr.value <= address < (section.sh_addr.value + section.sh_size.value):
+                result_section_h = section
+                break
+        else:
+            raise ValueError(f'no section with such address {address:x}')
+
+        result_section = self.sections.value[idx]
+
+        return result_section_h, result_section
 
     @property
     def symbol_names(self):

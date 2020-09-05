@@ -1,12 +1,17 @@
 import logging
 from typing import Tuple, List, Dict
 
-from .fields import *
+from .fields import Field
 from .enum import Compliant
 from .streams import Stream
-from .exceptions import AbstructException, ChunkUnpackException
+from .exceptions import (
+    ChunkUnpackException,
+    UnpackException,
+    MagicException,
+)
 from .properties import (
-    get_root_from_chunk, ChunkPhase,
+    get_root_from_chunk,
+    Dependency,
 )
 
 

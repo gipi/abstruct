@@ -38,7 +38,7 @@ from .compression.zip import (
     ZIPLocalFileHeader,
 )
 
-from .core import Chunk, Meta, Dependency, ChunkPhase
+from .core import Chunk, Meta, Dependency
 from .exceptions import AbstructException, MagicException
 from .streams import Stream
 from . import fields

@@ -33,7 +33,7 @@ important when the attributes are size or the offset that tightly connected
 to the pack()/unpacking() routines.
 
 **we have two kind of dependencies: between values and between layout**: implicitely
-there is always a dependency between sibling chunk at the same level.
+there is always a dependency between sibling chunks at the same level.
 
 A problems arises when we have attributes that depend on other attributes, like a
 field that determines the size of the following field in the format description:
@@ -41,20 +41,20 @@ imagine a format like the following
 
 ```
 class FormatA(Chunk):
-    class Dependencies:
-        relations = [
-            ('subchunk_size', 'subchunk.size'),
-        ]
     magic = fields.StringField(default=b'\xca\xfe\xba\xbe')
     subchunk_size  = fields.StructField('I')
-    subchunk = fields.SubChunkField()
+    subchunk = fields.SubChunkField(size=Dependency(".subchunk_size"))
 ```
 
 in the packing we need to have packed the ``subchunk`` chunk before we can determine
 the size to put into the ``subchunk_size`` field.
 
+The problem arises when we change the ``subchunk_size`` value: should it propagate immediately?
+if it's so then we can't construct "non-compliant" configuration, i.e., something not "officially"
+parsable
+
 **N.B.:** here we can see that the dependency is one-way since it's a little tricky
-to decide what to do if we change the size
+to decide what to do if we change the size.
 
 Moreover from a single field can depend more than one field (for example the field
 ``EI_DATA`` in the ``ELF`` header determines the endianess of the file format for the
@@ -111,7 +111,9 @@ This parameter is evaluated at unpacking time and it is inherited by its childre
 ## APIs
 
 We'll try to describe what are the attributes and methods available an high
-level description
+level description.
+
+An idea is to use operator like ``len()`` to obtain the related values.
 
 ### ``size``
 
@@ -165,7 +167,7 @@ TO BE IMPLEMENTED
 
 ### ``unpack()``
 
-It's the simpler and straightforwad method: it reads the data and
+It's the simpler and straightforward method: it reads the data and
 set the offsets and sizes accordingly.
 
 If we unpack we should forget any possible dependencies and simply put the

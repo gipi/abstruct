@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 import unittest
-from enum import Flag, Enum
+from enum import Flag, Enum, auto
 from .enum import Compliant
 
 
@@ -17,6 +17,7 @@ from .executables.elf.enum import (
     ElfMachine,
     ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType, ElfDynamicTagType,
 )
+from .fields import Endianess
 
 from .images.png import (
     PNGColorType,
@@ -304,6 +305,27 @@ class FieldsTests(unittest.TestCase):
         df = DummyFile(b'\x01\x02\x03\x04\x05\x06\x07\x08')
         self.assertEqual(df.field_wo_default.value, 0x04030201)
         self.assertEqual(df.field_w_default.value, 0x08070605)
+
+    def test_struct_packing(self):
+        class Type(Enum):
+            miao = 0
+            bau = auto()
+
+        # little endian
+        field = fields.StructField('I', enum=Type)
+        self.assertEqual(field.value, Type.miao)
+
+        field.value = Type.bau
+
+        raw = field.pack()
+        self.assertEqual(raw, b'\x01\x00\x00\x00')
+
+        # big endian
+        field = fields.StructField('I', endianess=Endianess.BIG_ENDIAN, enum=Type)
+        field.value = Type.bau
+
+        raw = field.pack()
+        self.assertEqual(raw, b'\x00\x00\x00\x01')
 
     def test_bitfield(self):
         class WhateverEnum(Enum):

@@ -83,6 +83,9 @@ class Field(FieldBase):
         # here we probably need to initialize the default
         pass
 
+    def value_from_default(self):
+        return self.default
+
     def __str__(self):
         return str(self.value)
 
@@ -164,7 +167,7 @@ class Field(FieldBase):
             self.__dict__['_resolve'] = True
             self.init()
             self.__dict__['_resolve'] = old_resolve
-            self._value = self.default
+            self._value = self.value_from_default()
 
         return self._value
 
@@ -218,6 +221,12 @@ class StructField(Field):
         width = self.size() * 2  # we want to be as large as possible
         formatter = '0x%%0%dx' % width
         return formatter % (self.value if not self.enum else self.value.value,)
+
+    def value_from_default(self):
+        if not self.enum:
+            return super(StructField, self).value_from_default()
+
+        return self.enum(self.default)
 
     def get_format(self):
         return '%s%s' % ('<' if self.endianess == Endianess.LITTLE_ENDIAN else '>', self.format)

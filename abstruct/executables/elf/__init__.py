@@ -33,6 +33,7 @@ from ... import fields
 
 
 class ElfHeader(Chunk):
+    """Header of an ELF file, the same for 32/64bit"""
     e_ident     = elf_fields.ElfIdent()
     e_type      = elf_fields.Elf_Half(enum=ElfType, default=ElfType.ET_EXEC)
     e_machine   = elf_fields.Elf_Half(enum=ElfMachine, default=ElfMachine.EM_386)
@@ -40,11 +41,11 @@ class ElfHeader(Chunk):
     e_entry     = elf_fields.Elf_Addr()
     e_phoff     = elf_fields.Elf_Off()
     e_shoff     = elf_fields.Elf_Off()
-    e_flags     = elf_fields.Elf_Word()
+    e_flags     = elf_fields.Elf_Word()  # FIXME: this is processor specifics
     e_ehsize    = elf_fields.Elf_Half(equals_to=Dependency('.size'))
-    e_phentsize = elf_fields.Elf_Half()
+    e_phentsize = elf_fields.Elf_Half(default=32)  # FIXME: needs to be related to the actual size
     e_phnum     = elf_fields.Elf_Half()
-    e_shentsize = elf_fields.Elf_Half()
+    e_shentsize = elf_fields.Elf_Half(default=40)  # FIXME: needs to be related to the actual size
     e_shnum     = elf_fields.Elf_Half()
     e_shstrndx  = elf_fields.Elf_Half()
 

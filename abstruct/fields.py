@@ -211,13 +211,18 @@ class StructField(Field):
         self.format = format
         self.enum = enum
 
+    def _get_encoder(self):
+        return str if isinstance(self.value, bytes) else hex
+
     def __repr__(self):
         if not self.enum:
-            return '<%s(0x%x)>' % (self.__class__.__name__, self.value)
+            return '<%s(%s)>' % (self.__class__.__name__, self._get_encoder()(self.value))
 
-        return f'<{self.__class__.__name__}({self.value!r})'
+        return f'<{self.__class__.__name__}({self.value!r})>'
 
     def __str__(self):
+        if self.format == 'c':
+            return self.value.decode('latin1')
         width = self.size() * 2  # we want to be as large as possible
         formatter = '0x%%0%dx' % width
         return formatter % (self.value if not self.enum else self.value.value,)

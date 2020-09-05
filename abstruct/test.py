@@ -327,6 +327,15 @@ class FieldsTests(unittest.TestCase):
         raw = field.pack()
         self.assertEqual(raw, b'\x00\x00\x00\x01')
 
+    def test_struct_types(self):
+        s = fields.StructField('I', default=0xff)
+        self.assertEqual(repr(s), '<StructField(0xff)>')
+        self.assertEqual(str(s), '0x000000ff')
+
+        s = fields.StructField('c', default=b'\xff')
+        self.assertEqual(str(s), "\xff")
+        self.assertEqual(repr(s), "<StructField(b'\\xff')>")
+
     def test_bitfield(self):
         class WhateverEnum(Enum):
             pass

@@ -264,6 +264,7 @@ class ElfSegmentType(Enum):
     PT_HIPROC  = 0x7fffffff
 
 
+# FIXME: this architecture dependent
 class ElfSegmentFlag(Flag):
     PF_X = 0x01
     PF_W = 0x02

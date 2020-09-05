@@ -206,6 +206,7 @@ class Field(FieldBase):
 
 class StructField(Field):
 
+    # FIXME: make the enum internal mechanism overridable so to have arch-dependent-enums
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
         super().__init__(default=default if not equals_to else equals_to, **kw)
         self.format = format

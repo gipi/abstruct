@@ -176,6 +176,26 @@ class ElfFile(Chunk):
 
         return result_section_h, result_section
 
+    def append_segment_from_raw_data(self, data: bytes, address: int, segment_type: ElfSegmentType, permissions: ElfSegmentFlag) \
+            -> Tuple[SegmentHeader, Field]:
+        """Add the passed segment to the ELF file setting all the necessary."""
+        header = SegmentHeader()
+        header.p_vaddr.value = address
+        header.p_paddr.value = address
+        header.p_type.value = segment_type
+        header.p_flags.value = permissions
+
+        segment = fields.StringField(
+            Dependency('#p_filesz', obj=header),
+            offset=Dependency('#p_offset', obj=header)
+        )
+        segment.value = data
+
+        self.segments_header.append(header)
+        self.segments.value.append(segment)
+
+        return header, segment
+
     @property
     def symbol_names(self):
         return self.symbol_names_table.value

@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import List, Tuple, Type
 
 
 class ChunkPhase(Enum):
@@ -39,11 +40,18 @@ class Dependency(object):
     The relation is defined in one direction (usually for unpacking) and
     must be reversed during the packing phase!
 
+    The syntax for defining the expression is inspired from module resolution
+    with an extra element via the first char of the expression: we have the following
+
+     - '.' indicates we refer to a field at the same level
+     - '@' indicates the the first component is the name of a class
+     - '#' indicates that an actual instance
+
     Probably right now is overcomplicated, we want to understand if make sense
     to use __getattribute__ and __setattr__ to resolve automagically.
     '''
 
-    def __init__(self, expression, obj=None):
+    def __init__(self, expression, obj: Type["Field"] = None):
         self.expression = expression
         self.obj = obj
         self.logger = logging.getLogger(__name__)
@@ -51,21 +59,37 @@ class Dependency(object):
     def __call__(self, obj):
         return Dependency(self.expression, obj=obj)
 
+    def _resolve_wrt_class(self, instance: Type["Field"], fields_path: List[str]) -> Tuple[Type["Field"], List[str]]:
+        class_name = fields_path[0][1:]
+        self.logger.debug('resolve from class name: \'%s\'' % class_name)
+        field = get_instance_from_class_name(instance, class_name)
+
+        fields_path = fields_path[1:]  # skip the first one that is already resolved
+
+        return field, fields_path
+
+    def _resolve_wrt_instance(self, fields_path: List[str]) -> Tuple[Type["Field"], List[str]]:
+        self.logger.debug("trying to resolve wrt of an instance '%s'" % self.expression)
+        if self.obj is None:
+            raise AttributeError("I could not use resolution with respect to instance since 'obj' is not initialized")
+
+        fields_path = fields_path[0][1:], *fields_path[1:]
+        return self.obj, fields_path
     def resolve_field(self, instance):
         self.logger.debug('trying to resolve \'%s\'' % self.expression)
         field = None
         # here split the expression into the components
         # like python modules
         fields_path = self.expression.split('.')  # FIXME: create class FieldPath to encapsulate
+        # '.miao'.split(".") -> ['', 'miao']
+        # 'miao'.split(".") -> ['miao']
 
         # find the root the resolution starts
         if fields_path[0] != '':
             if fields_path[0].startswith('@'):  # we want to resolve wrt a class
-                class_name = fields_path[0][1:]
-                self.logger.debug('resolve from class name: \'%s\'' % class_name)
-                field = get_instance_from_class_name(instance, class_name)
-
-                fields_path = fields_path[1:]  # skip the first one that is already resolved
+                field, fields_path = self._resolve_wrt_class(instance, fields_path)
+            elif fields_path[0].startswith('#'):
+                field, fields_path = self._resolve_wrt_instance(fields_path)
             else:
                 field = get_root_from_chunk(instance)
                 self.logger.debug('resolve from root: \'%s\'' % field.__class__.__name__)

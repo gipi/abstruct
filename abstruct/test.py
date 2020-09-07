@@ -494,14 +494,50 @@ class ELFTest(unittest.TestCase):
         self.assertEqual(elf.header.e_ehsize.value, 52)
 
     def test_minimal_from_zero(self):
+        """Create an ELF file from scratch."""
         elf = ElfFile()
         str_header = SectionHeader(father=elf)
         str_header.sh_type.value = ElfSectionType.SHT_STRTAB
-        elf.sections_header.append(str_header)
 
-        self.assertEqual(elf.header.e_shnum.value, 1)
+        # minimal code to return 42, stolen from
+        #  <https://www.muppetlabs.com/~breadbox/software/tiny/teensy.html>
+        code = (
+            b'\x31\xc0'  # xor        eax, eax
+            b'\x40'      # inc        eax
+            b'\xb3\x2a'  # mov        bl, 42
+            b'\xcd\x80'  # int        0x80
+        )
+        starting_address = 0x08048054  # NOTE: the offset MUST match the virtual address modulo the alignment
+        s_header, segment = elf.append_segment_from_raw_data(
+            code,
+            starting_address,
+            ElfSegmentType.PT_LOAD,
+            ElfSegmentFlag.PF_X | ElfSegmentFlag.PF_R
+        )
+        s_header.p_memsz.value = s_header.p_filesz.value
+        s_header.p_align.value = 0x1000
+
+        # set the entry point
+        elf.header.e_entry.value = starting_address
+
+        self.assertEqual(len(elf.segments), 1)
+
         with open('/tmp/minimal', 'wb') as f:
             f.write(elf.pack())
+
+        self.assertEqual(segment.offset, elf.segments_header[0].p_offset.value)
+        self.assertEqual(len(elf.sections_header), 0)
+        # self.assertEqual(len(elf.sections.value), 0)
+        self.assertEqual(elf.sections_header.size(), 0, "check we don't have sections")
+        self.assertEqual(elf.sections.size(), 0, "check we don't have sections")
+
+        self.assertEqual(elf.layout, {
+            'header': (0, 52),
+            'sections_header': (52, 0),
+            'segments_header': (52, 32),
+            'sections': (84, 0),
+            'segments': (84, 32)
+        }, "check the layout is correct")
 
     def test_32bits(self):
         path_elf = os.path.join(os.path.dirname(__file__), 'main')

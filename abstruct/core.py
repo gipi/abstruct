@@ -114,6 +114,33 @@ class Chunk(Field, metaclass=MetaChunk):
 
         return dep
 
+    def get_reverse_dependencies(self) -> Dict[str, str]:
+        """This builds the ADG of the dependencies under the point of view of the packing."""
+        deps = self.get_dependencies()
+
+        reverse_deps: Dict[str, str] = {}
+
+        def _first_not_empty(_seq):
+            _iter = iter(_seq)
+            while (element := next(_iter)) == '':
+                pass
+
+            return element
+
+        # we are going to loop over the dependencies
+        for reference, dep in deps.items():
+            # to find the outermost elements
+            field_dst_name = _first_not_empty(reference.split("."))
+            field_src_name = _first_not_empty(dep.expression.split("."))
+
+            # check it's resolved internally by the field itself
+            if field_dst_name == field_src_name:
+                continue
+
+            reverse_deps[field_src_name] = field_dst_name
+
+        return reverse_deps
+
     def __repr__(self):
         msg = []
         for field_name, field in self.get_fields():

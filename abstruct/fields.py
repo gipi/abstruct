@@ -394,10 +394,11 @@ class ArrayField(Field):
 
     def relayout(self, offset=0):
         super().relayout(offset=offset)
+        size = 0
         for field in self.value:
-            offset += field.relayout(offset=offset)
+            size += field.relayout(offset=offset + size)
 
-        return offset
+        return size
 
     def pack(self, stream=None, relayout=True):
         data = b''

@@ -185,6 +185,46 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(tlv.extra.value, 0x0d0c0b0a)
         self.assertEqual(tlv.extra.offset, 0x04 + 0x04 + 0x03)
 
+    def test_dependencies(self):
+        """More complex example"""
+        class Dummy(Chunk):
+            off = fields.StructField('I')
+            length = fields.StructField('I')
+            data = fields.StringField(
+                Dependency('.length'),
+                offset=Dependency('.off'),
+            )
+            footer = fields.StructField('I', default=0xcafe)
+
+        dummy = Dummy()
+
+        reverse_deps = dummy.get_reverse_dependencies()
+
+        self.assertEqual(reverse_deps, {
+            'off': 'data',
+            'length': 'data',
+        })
+        self.assertEqual(len(dummy.data), 0)
+
+        dummy.data.value = b'kebab'
+        packed = dummy.pack()
+
+        self.assertEqual(packed, (
+            b'\x08\x00\x00\x00'
+            b'\x05\x00\x00\x00'
+            b'kebab'
+            b'\xfe\xca\x00\x00'
+        ))
+        self.assertEqual(dummy.off.value, 8, "check field 'off' updated with actual offset")
+        self.assertEqual(dummy.length.value, 5, "check field 'length' updated with actual length")
+        self.assertEqual(dummy.off.value, dummy.data.offset, "check data's offset match field 'off'")
+        self.assertEqual(dummy.layout, {
+            'off': (0, 4),
+            'length': (4, 4),
+            'data': (8, 5),
+            'footer': (13, 4),
+        })
+
     def test_enum(self):
         self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
         self.assertEqual(ElfEIClass.ELFCLASS64.name, 'ELFCLASS64')

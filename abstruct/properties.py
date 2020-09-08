@@ -32,13 +32,22 @@ def get_instance_from_chunk(instance, condition):
     return father
 
 
-class Dependency(object):
+class Dependency():
     '''This makes the relation between fields possible.
 
     We want that accessing this field the resolution is automagical.
 
     The relation is defined in one direction (usually for unpacking) and
     must be reversed during the packing phase!
+
+    In practice this class allows to write something like
+
+        class Simple(Chunk):
+            length = fields.StructField('I')
+            data = fields.StringField(n=Dependency('.length'))
+
+    and have the (internal) length of the string contained in the field named 'data'
+    strictly connected to the field named 'length'.
 
     The syntax for defining the expression is inspired from module resolution
     with an extra element via the first char of the expression: we have the following
@@ -50,7 +59,6 @@ class Dependency(object):
     Probably right now is overcomplicated, we want to understand if make sense
     to use __getattribute__ and __setattr__ to resolve automagically.
     '''
-
     def __init__(self, expression, obj: Type["Field"] = None):
         self.expression = expression
         self.obj = obj

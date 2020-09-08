@@ -100,17 +100,17 @@ class Dependency():
                 field, fields_path = self._resolve_wrt_instance(fields_path)
             else:
                 field = get_root_from_chunk(instance)
-                self.logger.debug('resolve from root: \'%s\'' % field.__class__.__name__)
+                self.logger.debug(' resolve from root: \'%s\'' % field.__class__.__name__)
         else:  # we have a relative dependency
             field = instance.father
-            self.logger.debug('resolve from father: \'%s\'' % field.__class__.__name__)
+            self.logger.debug(' resolve from father: \'%s\'' % field.__class__.__name__)
             fields_path = fields_path[1:]  # skip the first one that is empty
 
         # now we can resolve each component
         for component_name in fields_path:
             field = getattr(field, component_name)
-        self.logger.debug('resolved as field %s' % field.__class__.__name__)
 
+        self.logger.debug(' resolved as field %s' % field.__class__.__name__)
         return field
 
     def resolve(self, instance):
@@ -127,7 +127,7 @@ class Dependency():
         else:
             value = field.value
 
-        self.logger.debug('resolved with value %s' % value)
+        self.logger.debug(' resolved with value %s' % value)
 
         return value
 

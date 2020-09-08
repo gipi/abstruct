@@ -183,6 +183,14 @@ class Chunk(Field, metaclass=MetaChunk):
 
         return value
 
+    @property
+    def layout(self) -> Dict[str, Tuple[int, int]]:
+        result = {}
+        for name, field in self.get_fields():
+            result[name] = (field.offset, field.size())
+
+        return result
+
     def relayout(self, offset=0):
         '''This method triggers the chunk's children to reset the offsets
         and the phase in order to pack correctly.

@@ -20,6 +20,7 @@ from .executables.elf.enum import (
     ElfEIData,
     ElfSegmentType,
     ElfDynamicTagType,
+    ElfSegmentFlag,
 )
 from .fields import Endianess
 

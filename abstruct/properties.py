@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+import inspect
 from typing import List, Tuple, Type
 
 
@@ -118,7 +119,6 @@ class Dependency():
         passed as argument.'''
         field = self.resolve_field(instance)
 
-        import inspect
 
         value = None
 

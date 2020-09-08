@@ -520,6 +520,14 @@ class ELFSegmentsField(fields.Field):
 
         return None
 
+    def relayout(self, offset=0):
+        super(ELFSegmentsField, self).relayout(offset=offset)
+        size = 0
+        for element in self.value:
+            size += element.relayout(offset=offset + size)
+
+        return offset
+
     def pack(self, stream=None, relayout=True):
         '''TODO: we have to update also the corresponding header entries'''
         raw = b''

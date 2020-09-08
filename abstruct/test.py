@@ -626,11 +626,12 @@ class ELFTest(unittest.TestCase):
         }, "check the layout is correct")
 
     def test_32bits(self):
+        """Testing precompiled 32bit files 'main'"""
         path_elf = os.path.join(os.path.dirname(__file__), 'main')
 
         logger.info(subprocess.check_output([
             'readelf',
-            '-h',
+            '--all',
             path_elf,
         ]).decode('utf-8'))
 
@@ -648,19 +649,38 @@ class ELFTest(unittest.TestCase):
 
         # sections
         SECTIONS_NUMBER = 30
+        SECTION_OFFSET = 6052
+        SEGMENTS_NUMBER = 9
+        SEGMENT_OFFSET = 52
         self.assertEqual(elf.header.e_ehsize.value, 52)
         self.assertEqual(len(elf.sections_header), SECTIONS_NUMBER)
         self.assertEqual(elf.header.e_shnum.value, SECTIONS_NUMBER)
+        self.assertEqual(elf.header.e_shoff.value, SECTION_OFFSET)
         self.assertEqual(elf.header.e_shstrndx.value, 29)
         self.assertEqual(len(elf.sections_header), SECTIONS_NUMBER)
         self.assertEqual(len(elf.sections.value), SECTIONS_NUMBER)
+
+        # check first section (SHT_NULL)
+        section_header_0th = elf.sections_header.value[0]
+        self.assertEqual(section_header_0th.sh_offset.value, 0)
+
+        # check second one
+        section_header_1st = elf.sections_header.value[1]
+        self.assertEqual(section_header_1st.sh_offset.value, 0x154)
+
+        # check the string table section
+        section_header_string_table = elf.sections_header.value[29]
+
+        self.assertEqual(section_header_string_table.sh_offset.value, 0x169f)
         self.assertEqual(elf.sections_header.value[29].sh_type.value, ElfSectionType.SHT_STRTAB)
         self.assertEqual(elf.sections_header.value[29].offset, 7212)
         self.assertEqual(elf.sections_header.value[28].sh_type.value, ElfSectionType.SHT_STRTAB)
         # programs
         self.assertEqual(elf.header.e_phentsize.value, 32)
-        self.assertEqual(elf.header.e_phnum.value, 9)
+        self.assertEqual(elf.header.e_phnum.value, SEGMENTS_NUMBER)
         self.assertEqual(len(elf.segments_header), 9)
+        self.assertEqual(elf.header.e_phoff.value, SEGMENT_OFFSET)
+        self.assertEqual(elf.segments_header.offset, SEGMENT_OFFSET)
         self.assertEqual(  # we remove the last three elements since have not well defined type
             [_.p_type.value for _ in elf.segments_header.value[:-3]],
             [_ for _ in [
@@ -722,12 +742,12 @@ class ELFTest(unittest.TestCase):
 
         # check if the string table is dumped correctly
         index_section_string_table = elf.header.e_shstrndx.value
-        section_string_table = elf.sections_header.value[index_section_string_table]
-        print(section_string_table.pack())
+        section_header_string_table = elf.sections_header.value[index_section_string_table]
+        print(section_header_string_table.pack())
         print(elf.segments.get_segment_for_address(0x00001ef8))
 
-        print(elf.dynamic)
-        print(elf.dynamic[ElfDynamicTagType.DT_NEEDED])
+        print(f'{elf.dynamic=}')
+        print(f'{elf.dynamic[ElfDynamicTagType.DT_NEEDED]=}')
         print(elf.dynamic.get(ElfDynamicTagType.DT_NEEDED))
         print(elf.dynamic.get(ElfDynamicTagType.DT_REL))
         print(elf.dynamic.get(ElfDynamicTagType.DT_PLTREL))

@@ -15,7 +15,11 @@ from .executables.elf.code import _disasm
 from .executables.elf.enum import (
     ElfType,
     ElfMachine,
-    ElfSectionType, ElfEIClass, ElfEIData, ElfSegmentType, ElfDynamicTagType,
+    ElfSectionType,
+    ElfEIClass,
+    ElfEIData,
+    ElfSegmentType,
+    ElfDynamicTagType,
 )
 from .fields import Endianess
 

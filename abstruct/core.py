@@ -198,12 +198,13 @@ class Chunk(Field, metaclass=MetaChunk):
         In practice it's like packing() but it's only interested in the sizes
         of the chunks.'''
         self.offset = offset
+
+        size = 0
         for field_name, field_instance in self.get_fields():
             self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
+            size += field_instance.relayout(offset=offset + size)
 
-            offset += field_instance.relayout(offset=offset)
-
-        return offset
+        return size
 
     def pack(self, stream=None, relayout=True):
         '''

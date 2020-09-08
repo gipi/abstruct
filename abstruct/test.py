@@ -406,6 +406,22 @@ class FieldsTests(unittest.TestCase):
         self.assertEqual(str(s), "\xff")
         self.assertEqual(repr(s), "<StructField(b'\\xff')>")
 
+    def test_string(self):
+        s = fields.StringField(10)
+
+        self.assertTrue(len(s), 10)
+        self.assertEqual(s.value, b'\x00' * 10)
+
+        s.value = b'miao'
+        self.assertEqual(len(s), 4)
+
+    def test_string_init_with_string(self):
+        text = b'miao'
+        s = fields.StringField(default=text)
+
+        self.assertEqual(s.size(), 4)
+        self.assertEqual(s.value, text)
+
     def test_bitfield(self):
         class WhateverEnum(Enum):
             pass

@@ -328,7 +328,7 @@ class CoreTests(unittest.TestCase):
         dummy.off.value = 0x0a
 
         # dummy.data.offset = 0x0a
-        packed_contents = dummy.pack(relayout=False)
+        packed_contents = dummy.pack()
 
         # i'm expecting to see the AAAAs starting at offset 10
         self.assertEqual(dummy.off.value, 0x0a)

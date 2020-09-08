@@ -225,6 +225,36 @@ class CoreTests(unittest.TestCase):
             'footer': (13, 4),
         })
 
+    def test_dependencies_wrt_instance(self):
+        """Check we can create dependencies attached directly to instances"""
+        class Offset(Chunk):
+            _name = fields.StringField(0x10)
+            off  = fields.StructField('I')
+
+        class Dummy(Chunk):
+            offsets = fields.ArrayField(Offset())
+            values = fields.ArrayField(fields.StructField('I'))
+
+        dummy = Dummy()
+        offset = Offset()
+        offset._name.value = b'falafel,falafel,'
+        dummy.offsets.append(offset)
+
+        value = fields.StructField('I', offset=Dependency('#off', obj=offset))
+        value.value = 0xcafebabe
+        dummy.values.append(value)
+
+        raw = dummy.pack()
+        self.assertEqual(
+            raw,
+            (
+                b'falafel,falafel,'
+                b'\x14\x00\x00\x00'
+                b'\xbe\xba\xfe\xca'
+            ),
+            "check we can resolve dependencies with fixed instances"
+        )
+
     def test_enum(self):
         self.assertTrue(ElfEIClass.ELFCLASS64.value == 2)
         self.assertEqual(ElfEIClass.ELFCLASS64.name, 'ELFCLASS64')

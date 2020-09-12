@@ -1,0 +1,9 @@
+site_name: "abstruct"
+theme:
+  name: "material"
+nav:
+  - Overview: index.md
+  - Design: DESIGN.md
+plugins:
+  - search
+  - mkdocstrings

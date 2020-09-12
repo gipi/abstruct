@@ -427,6 +427,12 @@ class FieldsTests(unittest.TestCase):
         self.assertEqual(s.size(), 4)
         self.assertEqual(s.value, text)
 
+    def test_fixed_length_string(self):
+        s = fields.FixedLengthString(0x10)
+
+        with self.assertRaises(ValueError):
+            s.value = b'miao'
+
     def test_bitfield(self):
         class WhateverEnum(Enum):
             pass

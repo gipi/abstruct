@@ -1,6 +1,10 @@
+from enum import Enum, auto
+
 import pytest
 
 from abstruct.core import Chunk
+from abstruct.enum import Compliant
+from abstruct.exceptions import UnpackException
 from abstruct.fields import StructField, StringField
 
 
@@ -19,6 +23,32 @@ def test_structfield_conversion_raw_value():
 
     assert field.value == 0xcafe
     assert field.raw == b'\xfe\xca\x00\x00'
+
+
+def test_structfield_set_raw():
+    field = StructField('I')
+
+    field.raw = b'\x01\x02\x03\x04'
+    assert field.value == 0x04030201
+
+
+def test_structfield_enum():
+    class DummyEnum(Enum):
+        NONE = 0
+        FIRST = auto()
+        SECOND = auto()
+
+    field = StructField('I', enum=DummyEnum, compliant=Compliant.ENUM)
+
+    assert field.value == DummyEnum.NONE
+
+    field.value = DummyEnum.SECOND
+
+    assert field.value == DummyEnum.SECOND
+    assert field.raw == b'\x02\x00\x00\x00'
+
+    with pytest.raises(UnpackException):
+        field.raw = b'\x04\x00\x00\x00'
 
 
 def test_stringfield():
@@ -47,8 +77,6 @@ def test_chunk():
         c = StructField('I', default=0xdeadbeef)
 
     dummy = Dummy()
-
-    print(dummy.value)
 
     assert dummy.a.size == 4
     assert dummy.a.raw == b'\xad\x0b\x00\x00'

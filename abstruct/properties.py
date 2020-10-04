@@ -36,7 +36,7 @@ def get_instance_from_chunk(instance, condition):
     return father
 
 
-class Dependency():
+class Dependency:
     '''This makes the relation between fields possible.
 
     We want that accessing this field the resolution is automagical.

@@ -77,3 +77,19 @@ class Stream(object):
     def restore(self):
         old_seek = self.history.pop()
         self.obj.seek(old_seek)
+
+
+class Backend:
+    """Wrapper around data management"""
+
+    def __init__(self):
+        self._data = io.BytesIO()
+
+    def read(self, count) -> bytes:
+        return self._data.read(count)
+
+    def write(self, data) -> int:
+        return self._data.write(data)
+
+    def seek(self, offset) -> None:
+        self._data.seek(offset)

@@ -1,5 +1,6 @@
 import logging
-from enum import Enum
+from enum import Enum, auto
+from functools import lru_cache
 import inspect
 from typing import List, Tuple, Type
 
@@ -7,9 +8,11 @@ from typing import List, Tuple, Type
 class ChunkPhase(Enum):
     '''Enum to state the actual phase of a chunk'''
     INIT      = 0
-    PROGRESS  = 1
-    PACKING   = 2
-    DONE      = 3
+    PROGRESS  = auto()
+    RELAYOUTING = auto()
+    PACKING   = auto()
+    UNPACKING = auto()
+    DONE      = auto()
 
 
 def get_root_from_chunk(instance):
@@ -64,6 +67,10 @@ class Dependency():
         self.expression = expression
         self.obj = obj
         self.logger = logging.getLogger(__name__)
+        self._hierarchy: List["Field"] = []
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}({self.expression})>'
 
     def __call__(self, obj):
         return Dependency(self.expression, obj=obj)
@@ -84,8 +91,15 @@ class Dependency():
 
         fields_path = fields_path[0][1:], *fields_path[1:]
         return self.obj, fields_path
+
     def resolve_field(self, instance):
-        self.logger.debug('trying to resolve \'%s\'' % self.expression)
+        self.logger.debug('trying to resolve \'%s\' using class \'%s\'' % (
+            self.expression,
+            self.__class__.__name__,
+        ))
+
+        self._hierarchy = []
+
         field = None
         # here split the expression into the components
         # like python modules
@@ -107,20 +121,23 @@ class Dependency():
             self.logger.debug(' resolve from father: \'%s\'' % field.__class__.__name__)
             fields_path = fields_path[1:]  # skip the first one that is empty
 
+        self._hierarchy.append(field)
+
         # now we can resolve each component
         for component_name in fields_path:
             field = getattr(field, component_name)
+            self.logger.debug(' resolved sub-component "%s" from "%s"' % (
+                field.__class__.__name__, component_name))
+            self._hierarchy.append(field)
 
         self.logger.debug(' resolved as field %s' % field.__class__.__name__)
+
         return field
 
-    def resolve(self, instance):
-        '''With this method we resolve the attribute with respect to the instance
-        passed as argument.'''
-        field = self.resolve_field(instance)
-
-
+    def _do_resolve(self, instance):
         value = None
+
+        field = self._hierarchy[-1]
 
         if inspect.ismethod(field):
             value = field()
@@ -131,6 +148,24 @@ class Dependency():
 
         return value
 
+    # @lru_cache()
+    def resolve(self, instance):
+        '''With this method we resolve the attribute with respect to the instance
+        passed as argument.'''
+        self.resolve_field(instance)
+
+        return self._do_resolve(instance)
+
+    def _do_value(self, instance, value):
+        """Returns the value to be set"""
+        return value
+
+    def resolve_and_set(self, instance, value):
+        """Set the value"""
+        real_field = self.resolve_field(instance)
+        if not hasattr(real_field, 'value'):
+            raise ValueError(f'something is wrong with the Dependency resolution!')
+        real_field.value = self._do_value(instance, value)
 
 class RatioDependency(Dependency):
 

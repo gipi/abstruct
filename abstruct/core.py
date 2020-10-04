@@ -12,6 +12,7 @@ from .exceptions import (
 from .properties import (
     get_root_from_chunk,
     Dependency,
+    ChunkPhase,
 )
 
 
@@ -62,28 +63,18 @@ class MetaChunk(type):
 
 
 class Chunk(Field, metaclass=MetaChunk):
-    '''
-    With Field is the main class that defines a format: its main attributes
-    are offset and size that identify univocally a Chunk.
+    """
+    Together with Field is the main class that defines a format: its main attributes
+    are offset and size that identify a Chunk.
 
     A Chunk can contain sub-chunks.
-
-    Two main operations are defined on a Chunk:
-
-     1. unpack(): the more straightforward, i.e., reading the binary data
-        and build a high-level representation of that.
-        Usually when unpacking you use as offset the actual offset of the
-        stream and the chunk itself knows how many bytes needs to read
-        to finalize the representation
-
-     2. pack(): encode the high-level representation into binary data.
 
     All the subclasses of this generate a XField to be used as Field()
     for any Chunk the needs it.
 
     NOTE: you need to import fields and then call fields.XField() otherwise
     the fields won't be found.
-    '''
+    """
 
     def __init__(self, filepath=None, **kwargs):
         self.stream = Stream(filepath) if filepath is not None else filepath
@@ -95,8 +86,10 @@ class Chunk(Field, metaclass=MetaChunk):
             self.logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
             self.unpack(self.stream)
         else:
-            for name in self.__class__._meta.fields:
-                getattr(self, name).init()  # FIXME: understand init() logic :P
+            # for name in self.__class__._meta.fields:
+            #    getattr(self, name).init()  # FIXME: understand init() logic :P
+
+            self.relayout()
 
     def get_ordered_fields_name(self) -> List[str]:
         return self._meta.fields
@@ -155,7 +148,8 @@ class Chunk(Field, metaclass=MetaChunk):
         return msg
 
     def init(self):
-        pass
+        for _, field in self.get_fields():
+            field.init()
 
     @property
     def root(self):
@@ -166,12 +160,12 @@ class Chunk(Field, metaclass=MetaChunk):
     def isRoot(self):
         return self.root == self
 
-    def size(self):
+    def _get_size(self):
         '''the size parameter MUST not be set but MUST be derived from the subchunks'''
         size = 0
         for field_name in self._meta.fields:
             field = getattr(self, field_name)
-            size += field.size()
+            size += field.size
 
         return size
 
@@ -179,7 +173,10 @@ class Chunk(Field, metaclass=MetaChunk):
     def raw(self):
         value = b''
         for field_name, field_instance in self.get_fields():
-            value += field_instance.raw
+            field_raw = field_instance.raw
+            self.logger.debug("field '{}' raw={}".format(field_name, field_raw))
+            value += field_raw
+
 
         return value
 
@@ -187,7 +184,7 @@ class Chunk(Field, metaclass=MetaChunk):
     def layout(self) -> Dict[str, Tuple[int, int]]:
         result = {}
         for name, field in self.get_fields():
-            result[name] = (field.offset, field.size())
+            result[name] = (field.offset, field.size)
 
         return result
 
@@ -197,12 +194,16 @@ class Chunk(Field, metaclass=MetaChunk):
 
         In practice it's like packing() but it's only interested in the sizes
         of the chunks.'''
+        phase_old = self._phase
+        self._phase = ChunkPhase.RELAYOUTING
         self.offset = offset
 
         size = 0
         for field_name, field_instance in self.get_fields():
             self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
             size += field_instance.relayout(offset=offset + size)
+
+        self._phase = phase_old
 
         return size
 
@@ -215,6 +216,7 @@ class Chunk(Field, metaclass=MetaChunk):
 
         **we need to update size and offset during the packing phase**
         '''
+        self._phase = ChunkPhase.PACKING
         # if we are the root father then we can set our offset to zero
         # and initialize the stream
         if relayout:
@@ -235,6 +237,8 @@ class Chunk(Field, metaclass=MetaChunk):
             # we call pack() on the subchunks
             field_instance.pack(stream=stream, relayout=False)  # we hope someone triggered the relayout before
 
+        self._phase = ChunkPhase.PACKING
+
         return stream.obj.getvalue()
 
     def unpack(self, stream):
@@ -254,6 +258,7 @@ class Chunk(Field, metaclass=MetaChunk):
             1. you can have size and offset dependencies
             2. you can enforce dependencies or not
         '''
+        self._phase = ChunkPhase.UNPACKING
         for field_name, field in self.get_fields():
             self.logger.debug('unpacking %s.%s' % (self.__class__.__name__, field_name))
 

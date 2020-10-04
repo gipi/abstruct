@@ -1,3 +1,7 @@
+"""
+A Field is "fundamental" datatype from the format point of view, something directly
+packable/unpackable without need for relayouting.
+"""
 import logging
 import struct
 import copy
@@ -6,7 +10,7 @@ from typing import Dict
 
 from .enum import Compliant
 from .properties import Dependency, ChunkPhase
-from .streams import Stream
+from .streams import Stream, Backend
 from .exceptions import UnpackException, MagicException
 
 
@@ -62,8 +66,10 @@ class FieldBase(object):
 
 class Field(FieldBase):
 
-    def __init__(self, *args, name=None, father=None, default=None, offset=None, endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
+    def __init__(self, *args, name=None, father=None, default=None, offset=None, size=None, \
+                 endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
         super().__init__()
+        self._phase = ChunkPhase.INIT
         self.logger = logging.getLogger(__name__)
         self._dependencies: Dict[str, Dependency] = {}
         self._resolve = True  # TODO: create contextmanager
@@ -73,6 +79,8 @@ class Field(FieldBase):
         self.offset = offset
         self._value = None
         self._data = None
+        self._size = size
+        self._backend = Backend()
         self.endianess = endianess
         self.compliant = compliant
         self.is_magic = is_magic
@@ -81,7 +89,7 @@ class Field(FieldBase):
 
     def init(self):
         # here we probably need to initialize the default
-        pass
+        self.value = self.value_from_default()
 
     def value_from_default(self):
         return self.default
@@ -122,8 +130,9 @@ class Field(FieldBase):
             self.__dict__['_resolve'] = True
             if isinstance(field, Dependency):
                 self.logger.debug('set for field \'%s\' the value \'%s\' depends on' % (name, value))
-                real_field = field.resolve_field(self)
-                real_field.value = value
+                # real_field = field.resolve_field(self)
+                # real_field.value = value
+                field.resolve_and_set(self, value)
                 return
 
         except AttributeError:
@@ -132,6 +141,12 @@ class Field(FieldBase):
             self.__dict__['_resolve'] = True  # FIXME
 
         super().__setattr__(name, value)
+
+    def get_backend(self):
+        if self.father:
+            return self.father.get_backend()
+
+        return self._backend
 
     def get_dependencies(self):
         """Return the dictionary containing as key the field"""
@@ -167,13 +182,20 @@ class Field(FieldBase):
             self.__dict__['_resolve'] = True
             self.init()
             self.__dict__['_resolve'] = old_resolve
-            self._value = self.value_from_default()
+            self._set_value(self.value_from_default())
 
         return self._value
 
     value = property(
         fget=lambda self: self._get_value(),
         fset=lambda self, value: self._set_value(value))
+
+    def _get_size(self):
+        return NotImplementedError(f"method {self.__class__.__name__}_get_size() not implemented")
+
+    size = property(
+        fget=lambda self: self._get_size(),
+    )
 
     def relayout(self, offset=0):
         '''
@@ -184,9 +206,13 @@ class Field(FieldBase):
 
         self._resolve = True
         '''
+        old_phase = self._phase
+        self._phase = ChunkPhase.RELAYOUTING
         self.offset = offset
 
-        return self.size()
+        self._phase = old_phase
+
+        return self.size
 
     def _update_value(self):
         '''This is used to update the binary value before packing'''
@@ -205,12 +231,21 @@ class Field(FieldBase):
 
 
 class StructField(Field):
+    """
+    Simplest of the fields: mimic the behaviour of the struct module packing/unpacking
+    integers to/from bytes.
+
+    The main advantage is the possibility to indicate via the "enum" argument some subclass
+    of enum.Enum so to have directly a representation of the integer value of the field itself.
+    """
 
     # FIXME: make the enum internal mechanism overridable so to have arch-dependent-enums
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
         super().__init__(default=default if not equals_to else equals_to, **kw)
         self.format = format
         self.enum = enum
+
+        self.init()
 
     def _get_encoder(self):
         return str if isinstance(self.value, bytes) else hex
@@ -230,19 +265,28 @@ class StructField(Field):
 
     def value_from_default(self):
         if not self.enum:
-            return super(StructField, self).value_from_default()
+            return super().value_from_default()
 
         return self.enum(self.default)
 
     def get_format(self):
         return '%s%s' % ('<' if self.endianess == Endianess.LITTLE_ENDIAN else '>', self.format)
 
-    def size(self):
+    def _set_value(self, value) -> None:
+        super()._set_value(value)
+
+        raw = struct.pack(self.get_format(), self._value if not self.enum else self._value.value)
+        # TODO: factorize
+        self.get_backend().seek(self.offset if self.offset is not None else 0)
+        self.get_backend().write(raw)
+
+    def _get_size(self):
         return struct.calcsize(self.get_format())
 
     @property
-    def raw(self):
-        return self._data
+    def raw(self):  # TODO: factorize
+        self.get_backend().seek(self.offset if self.offset is not None else 0)
+        return self.get_backend().read(self.size)
 
     def pack(self, stream=None, relayout=True):
         self._update_value()
@@ -309,11 +353,23 @@ class StringField(Field):
     def init(self):
         self.default = b'\x00' * self._n if not self.default else self.default
 
-    def size(self):
+    def _get_size(self):
         return len(self)
 
     def _set_value(self, value) -> None:
+        """The StringField has the size as a parameter and we must follow that indication
+        unless it's a Dependency, in that case we are going to write back the value where necessary."""
+        length = len(value)
+        if '_n' not in self.get_dependencies() and length != self._n:
+            raise ValueError(f'you are trying to set a value with the wrong size (that is {self._n} bytes)')
+
         super()._set_value(value)
+
+        raw = value  # TODO: factorize
+        self.get_backend().seek(self.offset if self.offset is not None else 0)
+        self.get_backend().write(raw)
+
+        # TODO: do this only on Dependency?
         self._n = len(self.value)
 
     @property
@@ -413,6 +469,7 @@ class ArrayField(Field):
         return size
 
     def pack(self, stream=None, relayout=True):
+        self._phase = ChunkPhase.PACKING
         data = b''
         if relayout:
             self.relayout()
@@ -420,6 +477,12 @@ class ArrayField(Field):
         for field in self.value:
             data += field.pack(stream=stream, relayout=False)
 
+        self._phase = ChunkPhase.DONE
+
+        self.logger.debug("field %s named '%s'finished packing" % (
+            self.__class__.__name__,
+            self.name,
+        ))
         return data  # FIXME
 
     def instance_element(self):

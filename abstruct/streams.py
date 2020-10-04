@@ -91,5 +91,7 @@ class Backend:
     def write(self, data) -> int:
         return self._data.write(data)
 
-    def seek(self, offset) -> None:
+    def seek(self, offset) -> "Backend":
         self._data.seek(offset)
+
+        return self

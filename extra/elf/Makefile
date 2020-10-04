@@ -7,6 +7,7 @@ TARGETS += main_x86
 TARGETS += main.so
 TARGETS += main_arm32
 TARGETS += main_arm64
+TARGETS += tiny
 
 all: $(TARGETS)
 
@@ -20,6 +21,10 @@ main_x86: CC=i686-linux-gnu-gcc
 main_amd64: CC=gcc
 main_arm32: CC=arm-linux-gnueabi-gcc
 main_arm64: CC=aarch64-linux-gnu-gcc-10
+
+tiny: tiny.asm
+	nasm -f bin -o $@ $^
+	chmod +x $@
 
 clean:
 	rm -vf $(TARGETS)

@@ -6,6 +6,7 @@ import logging
 import struct
 import copy
 from enum import Enum, Flag, auto
+from functools import lru_cache
 from typing import Dict
 
 from .enum import Compliant
@@ -28,8 +29,6 @@ class Field(FieldBase):
         self.father = father
         self.default = default
         self.offset = offset
-        self._value = None
-        self._data = None
         self._size = size
         self._backend = Backend()
         self.endianess = endianess
@@ -148,6 +147,17 @@ class Field(FieldBase):
         fget=lambda self: self._get_size(),
     )
 
+    def _get_raw(self) -> bytes:
+        raise NotImplementedError()
+
+    def _set_raw(self, value) -> None:
+        raise NotImplementedError(f"method {self.__class__.__name__}._set_raw() not implemented")
+
+    raw = property(
+        fget=lambda self: self._get_raw(),
+        fset=lambda self, value: self._set_raw(value),
+    )
+
     def relayout(self, offset=0):
         '''
         self._resolve = False  # we don't want the automagical resolution
@@ -223,6 +233,13 @@ class StructField(Field):
     def get_format(self):
         return '%s%s' % ('<' if self.endianess == Endianess.LITTLE_ENDIAN else '>', self.format)
 
+    @lru_cache
+    def _get_value(self):
+        raw = self.get_backend().\
+            seek(self.offset if self.offset is not None else 0).\
+            read(self.size)
+        return self._unpack(raw)
+
     def _set_value(self, value) -> None:
         super()._set_value(value)
 
@@ -230,16 +247,23 @@ class StructField(Field):
         # TODO: factorize
         self.get_backend().seek(self.offset if self.offset is not None else 0)
         self.get_backend().write(raw)
+        self._get_value.cache_clear()
 
     def _get_size(self):
         return struct.calcsize(self.get_format())
 
-    @property
-    def raw(self):  # TODO: factorize
+    def _get_raw(self) -> bytes:  # TODO: factorize
         self.get_backend().seek(self.offset if self.offset is not None else 0)
         return self.get_backend().read(self.size)
 
-    def pack(self, stream=None, relayout=True):
+    def _set_raw(self, raw: bytes) -> None:
+        self.get_backend()\
+            .seek(self.offset if self.offset is not None else 0)\
+            .write(raw)
+        self._get_value.cache_clear()
+        value = self.value
+
+    def _pack(self) -> bytes:
         self._update_value()
         packed_value = struct.pack(self.get_format(), self.value if not self.enum else self.value.value)
         self._data = packed_value
@@ -252,40 +276,42 @@ class StructField(Field):
 
         return stream.getvalue()
 
-    def unpack_struct(self):
+    def _unpack_struct(self, value: bytes) -> int:
         try:
-            self.value = struct.unpack(self.get_format(), self._data)[0]
+            unpacked_value = struct.unpack(self.get_format(), value)[0]
         except struct.error as e:
             self.logger.error(e)
             exc = MagicException if self.is_compliant(Compliant.MAGIC) else UnpackException
             raise exc(chain=[])
 
-    def unpack_enum(self):
+        return unpacked_value
+
+    def _unpack_enum(self, value: int) -> Enum:
+        try:
+            return self.enum(value)
+        except ValueError as e:
+            instance = self
+            while instance:
+                if instance.compliant & Compliant.ENUM:
+                    raise UnpackException(chain=[])
+                if not instance.compliant & Compliant.INHERIT:
+                    break
+
+                instance = instance.father
+
+            self.logger.warning(f'enum {self.enum!r} doesn\'t have element with value 0x{value:x} in it')
+
+    def _unpack(self, raw):
+        value = self._unpack_struct(raw)
         if self.enum:
-            try:
-                self.value = self.enum(self.value)
-            except ValueError as e:
-                instance = self
-                while instance:
-                    if (instance.compliant & Compliant.ENUM):
-                        raise UnpackException(chain=[])
-                    if not instance.compliant & Compliant.INHERIT:
-                        break
+            value = self._unpack_enum(value)
 
-                    instance = instance.father
-
-                self.logger.warning(f'enum {self.enum!r} doesn\'t have element with value 0x{self.value:x} in it')
-
-    def unpack(self, stream):
-        self._data = stream.read(self.size())
-        self.unpack_struct()
-        self.unpack_enum()
-
-        if self.is_magic and self.value != self.default:
+        if self.is_magic and value != self.default:
             self.logger.warning(f'the magic doesn\'t correspond')
             if self.is_compliant(Compliant.MAGIC):
                 raise MagicException(chain=[])
 
+        return value
 
 # TODO: understand if it is needed to separate from Binary and alphanumeric strings.
 class StringField(Field):
@@ -301,11 +327,18 @@ class StringField(Field):
     def __len__(self):
         return len(self.value)
 
-    def init(self):
-        self.default = b'\x00' * self._n if not self.default else self.default
+    def value_from_default(self):
+        return b'\x00' * self._n if not self.default else self.default
 
     def _get_size(self):
-        return len(self)
+        return self._n
+
+    @lru_cache
+    def _get_value(self):
+        raw = self.get_backend().\
+            seek(self.offset if self.offset is not None else 0).\
+            read(self.size)
+        return raw
 
     def _set_value(self, value) -> None:
         """The StringField has the size as a parameter and we must follow that indication
@@ -323,8 +356,10 @@ class StringField(Field):
         # TODO: do this only on Dependency?
         self._n = len(self.value)
 
-    @property
-    def raw(self):
+        self._get_value.cache_clear()
+        value = self.value
+
+    def _get_raw(self):
         return self.value
 
     def pack(self, stream=None, relayout=True):

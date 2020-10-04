@@ -48,7 +48,8 @@ class Chunk(Field, metaclass=MetaChunk):
             # for name in self.__class__._meta.fields:
             #    getattr(self, name).init()  # FIXME: understand init() logic :P
 
-            self.relayout()
+            self.relayout()  # it's recursive, maybe act based on state
+            self.init()
 
     def get_ordered_fields_name(self) -> List[str]:
         return self._meta.fields

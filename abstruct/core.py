@@ -1,8 +1,13 @@
+"""
+Core module for the abstraction of a file format
+
+"""
 import logging
 from typing import Tuple, List, Dict
 
 from .fields import Field
 from .enum import Compliant
+from .meta import MetaChunk
 from .streams import Stream
 from .exceptions import (
     ChunkUnpackException,
@@ -14,52 +19,6 @@ from .properties import (
     Dependency,
     ChunkPhase,
 )
-
-
-class Meta(object):
-
-    def __init__(self):
-        self.fields = []
-
-
-class MetaChunk(type):
-
-    def __new__(cls, names, bases, attrs):
-        '''All of this is a big hack, maybe too inspired by how Django does a similar thing!'''
-        module = attrs.pop('__module__')
-        classcell = attrs.pop('__classcell__', None)
-
-        new_attrs = {
-            '__module__': module,
-        }
-        if classcell is not None:
-            new_attrs['__classcell__'] = classcell
-        new_cls = super(MetaChunk, cls).__new__(cls, names, bases, new_attrs)
-
-        new_cls._meta = Meta()
-
-        # handle inheritance
-        parents = [_ for _ in bases if isinstance(_, MetaChunk)]
-        for parent in parents:
-            for obj_name in parent._meta.fields:
-                obj = parent.__dict__[obj_name]
-                setattr(new_cls, obj_name, obj)
-                new_cls._meta.fields.append(obj_name)
-
-        for obj_name, obj in attrs.items():
-            new_cls.add_to_class(obj_name, obj)
-
-        cls.logger = logging.getLogger(__name__)
-
-        return new_cls
-
-    def add_to_class(cls, name, value):
-        if hasattr(value, 'contribute_to_chunk'):
-            cls.logger.debug('contribute_to_chunk() found for field \'%s\'' % name)
-            cls._meta.fields.append(name)
-            value.contribute_to_chunk(cls, name)
-        else:
-            setattr(cls, name, value)
 
 
 class Chunk(Field, metaclass=MetaChunk):

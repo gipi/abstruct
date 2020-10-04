@@ -9,59 +9,10 @@ from enum import Enum, Flag, auto
 from typing import Dict
 
 from .enum import Compliant
+from .meta import FieldBase, Endianess
 from .properties import Dependency, ChunkPhase
 from .streams import Stream, Backend
 from .exceptions import UnpackException, MagicException
-
-
-class Endianess(Enum):
-    LITTLE_ENDIAN = auto()
-    BIG_ENDIAN    = auto()
-    NETWORK       = auto()
-    NATIVE        = auto()
-
-
-class FieldDescriptor(object):
-
-    def __init__(self, field_instance, field_name):
-        self.field = field_instance
-        self.field.name = field_name
-
-    def __get__(self, instance, type=None):
-        data = instance.__dict__
-
-        if self.field.name in data:
-            return data[self.field.name]
-        else:
-            new_field = self.field.create(father=instance)
-            data[self.field.name] = new_field
-            return data[self.field.name]
-
-    def __set__(self, instance, value):
-        data = instance.__dict__
-
-        # if the value is the same type then set as it is
-        if isinstance(value, self.field.__class__):
-            value.father = instance
-            value.name = self.field.name
-            data[self.field.name] = value
-        # otherwise delegate to the field
-        else:
-            data[self.field.name].set(value)
-
-
-class FieldBase(object):
-
-    def contribute_to_chunk(self, cls, name):
-        if not getattr(cls, name, None):
-            setattr(cls, name, FieldDescriptor(self, name))
-        else:
-            raise AttributeError(f'field {name} is already present in class {cls.__name__}')
-
-    def create(self, father):
-        instance = copy.deepcopy(self)
-        instance.father = father
-        return instance
 
 
 class Field(FieldBase):

@@ -141,7 +141,7 @@ class Field(FieldBase):
         fset=lambda self, value: self._set_value(value))
 
     def _get_size(self):
-        return NotImplementedError(f"method {self.__class__.__name__}_get_size() not implemented")
+        raise NotImplementedError(f"method {self.__class__.__name__}_get_size() not implemented")
 
     size = property(
         fget=lambda self: self._get_size(),

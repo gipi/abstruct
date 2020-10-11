@@ -49,6 +49,7 @@ class Field(FieldBase):
         return str(self.value)
 
     def get_backend(self):
+        """This is the backend used by the field for storage operations."""
         if self.father:
             return self.father.get_backend()
 

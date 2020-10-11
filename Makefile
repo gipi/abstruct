@@ -1,4 +1,4 @@
-.PHONY: all
+.PHONY: all tests
 
 all: linting tests elfs
 
@@ -7,7 +7,7 @@ linting:
 	pylint abstruct
 
 tests:
-	python -m unittest
+	py.test
 
 elfs:
 	make -C extra/elf/

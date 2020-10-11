@@ -200,19 +200,6 @@ class StructField(Field):
         self._get_value.cache_clear()
         value = self.value
 
-    def _pack(self) -> bytes:
-        self._update_value()
-        packed_value = struct.pack(self.get_format(), self.value if not self.enum else self.value.value)
-        self._data = packed_value
-
-        stream = stream if stream else Stream(b'')
-
-        stream.write(packed_value)
-
-        self._phase = ChunkPhase.DONE
-
-        return stream.getvalue()
-
     def _unpack_struct(self, value: bytes) -> int:
         try:
             unpacked_value = struct.unpack(self.get_format(), value)[0]
@@ -302,21 +289,6 @@ class StringField(Field):
 
     def _get_raw(self):
         return self.value
-
-    def pack(self, stream=None, relayout=True):
-        stream = Stream(b'') if not stream else stream
-
-        stream.write(self.value)
-
-        self._phase = ChunkPhase.DONE
-
-        return stream.obj.getvalue()
-
-    def unpack(self, stream):
-        self.value = stream.read(self._n)
-
-        if self.is_magic and self.value != self.default:
-            raise MagicException(chain=None)
 
 
 class FixedLengthString(StringField):

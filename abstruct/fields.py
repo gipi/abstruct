@@ -367,22 +367,10 @@ class ArrayField(Field):
 
         return size
 
-    def pack(self, stream=None, relayout=True):
-        self._phase = ChunkPhase.PACKING
-        data = b''
-        if relayout:
-            self.relayout()
 
-        for field in self.value:
-            data += field.pack(stream=stream, relayout=False)
-
-        self._phase = ChunkPhase.DONE
-
-        self.logger.debug("field %s named '%s'finished packing" % (
             self.__class__.__name__,
             self.name,
         ))
-        return data  # FIXME
 
     def instance_element(self):
         return self.field_cls.create(father=self)  # pass the father so that we don't lose the hierarchy

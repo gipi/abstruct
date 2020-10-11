@@ -120,7 +120,7 @@ class Chunk(Field, metaclass=MetaChunk):
         value = b''
         for field_name, field_instance in self.get_fields():
             field_raw = field_instance.raw
-            self.logger.debug("field '{}' raw={}".format(field_name, field_raw))
+            self.logger.debug("field '%s' raw=%s", field_name, field_raw)
             value += field_raw
 
 

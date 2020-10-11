@@ -4,7 +4,7 @@ import pytest
 
 from abstruct.enum import Compliant
 from abstruct.exceptions import UnpackException
-from abstruct.fields import StructField, StringField
+from abstruct.fields import StructField, StringField, SelectField, ArrayField
 
 
 def test_structfield_conversion_raw_value():
@@ -66,3 +66,34 @@ def test_stringfield():
 
     assert field.value == data
     assert field.raw == data
+def test_arrayfield():
+    length = 10
+    array = ArrayField(StructField('I'), n=length)
+
+    # check some basic property
+    assert isinstance(array.value, list)
+    assert len(array.value) == length
+    assert len(array) == length
+
+    # check that the elements are not duplicated
+    assert array[0] is not array[1]
+
+    # check the offsets make sens
+    assert array[0].offset == 0
+    assert array[1].offset == 4
+    assert array[9].offset == 36
+
+    # check the value are all zero
+    for _ in range(len(array)):
+        field = array[_]
+        assert field.value == 0
+
+    # set one and check is actually changed
+    array[3].value = 0xcafebabe
+    assert [_.value for _ in array] == [
+        0, 0, 0, 0xcafebabe, 0, 0, 0, 0, 0, 0,
+    ]
+
+    array.clear()
+
+    assert len(array) == 0

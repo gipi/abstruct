@@ -7,7 +7,7 @@ import struct
 import copy
 from enum import Enum, Flag, auto
 from functools import lru_cache
-from typing import Dict
+from typing import Dict, List
 
 from .enum import Compliant
 from .meta import FieldBase, Endianess
@@ -313,20 +313,14 @@ class ArrayField(Field):
     This class must behave like a list in python, obviously cannot implement all the methods
     since, for example, slicing what should mean?
     '''
+    length = PropertyDescriptor('length', int)
 
     def __init__(self, field_cls, n=0, canary=None, **kw):
         self.field_cls = field_cls
-        if n and not (isinstance(n, Dependency) or isinstance(n, int)):
-            raise Exception('n is \'%s\' must be of the right type' % n.__class__.__name__)
-
-        if 'default' not in kw:
-            kw['default'] = []
-            if isinstance(n, int) and n > 0:
-                kw['default'] = [self.instance_element()] * n
-
-        super().__init__(**kw)
-        self._n = n
+        self.length = n
         self._canary = canary
+        self._elements: List[Field] = []
+        super().__init__(**kw)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}({self.value!r})>'
@@ -337,9 +331,20 @@ class ArrayField(Field):
     def __len__(self):
         return len(self.value)
 
+    def value_from_default(self):
+        return [self.instance_element() for _ in range(self.length)]  # otherwise it uses the same object
+
+    def init(self):
+        super().init()
+        # we need to trigger the reset to move the backend to the father (i.e. this instance)
+        self.relayout(offset=self.offset or 0, reset=True)
+
+    def _get_value(self):
+        return self._elements
+
     def _set_value(self, value):
-        super()._set_value(value)
-        self._n = len(self.value)
+        self._elements = value
+        self.length = len(self.value)
 
     def clear(self):
         self.value.clear()
@@ -359,18 +364,23 @@ class ArrayField(Field):
 
         return size
 
-    def relayout(self, offset=0):
-        super().relayout(offset=offset)
-        size = 0
-        for field in self.value:
-            size += field.relayout(offset=offset + size)
-
-        return size
-
-
+    def relayout(self, offset=0, reset=False):
+        self.logger.debug("field %s named '%s' started relayouting" % (
             self.__class__.__name__,
             self.name,
         ))
+        super().relayout(offset=offset, reset=False)  # not reset otherwise recursion
+        size = 0
+        for field in self.value:
+            size += field.relayout(offset=offset + size, reset=reset)
+
+        self.logger.debug("field %s named '%s' finished relayouting with size %d" % (
+            self.__class__.__name__,
+            self.name,
+            size,
+        ))
+
+        return size
 
     def instance_element(self):
         return self.field_cls.create(father=self)  # pass the father so that we don't lose the hierarchy
@@ -381,8 +391,7 @@ class ArrayField(Field):
     def append(self, element):
         element.father = self
         self.value.append(element)
-        self._n = len(self.value)
-
+        self.length = len(self.value)
 
 
 class SelectField(Field):

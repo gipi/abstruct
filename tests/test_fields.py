@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import Enum, auto, Flag
 
 import pytest
 
@@ -66,6 +66,28 @@ def test_stringfield():
 
     assert field.value == data
     assert field.raw == data
+
+
+def test_selectfield():
+    class DummyType(Flag):
+        FIRST = 0
+        SECOND = 1
+
+    type2field = {
+        DummyType.FIRST: StructField('I', default=0xcafebabe),
+        DummyType.SECOND: StringField(0x10, default=b'magicabula AUAUA'),
+        SelectField.Type.DEFAULT: StructField('I', default=0xabad1dea),
+    }
+
+    select = SelectField(DummyType, type2field)
+
+    assert select.value == 0xabad1dea
+
+    select = SelectField(DummyType, type2field, default=DummyType.SECOND)
+
+    assert select.value == b'magicabula AUAUA'
+
+
 def test_arrayfield():
     length = 10
     array = ArrayField(StructField('I'), n=length)

@@ -6,6 +6,7 @@ from abstruct.core import Chunk
 from abstruct.enum import Compliant
 from abstruct.exceptions import UnpackException
 from abstruct.fields import StructField, StringField
+from abstruct.properties import Dependency
 
 
 def test_structfield_conversion_raw_value():
@@ -82,6 +83,7 @@ def test_chunk():
     assert dummy.a.raw == b'\xad\x0b\x00\x00'
     assert dummy.a.value == 0xbad
     assert dummy.a.offset == 0x00
+    assert dummy.a.father == dummy
 
     assert dummy.b.size == 0x10
     assert dummy.b.raw == b'\x00' * 0x10
@@ -98,6 +100,22 @@ def test_chunk():
         b'\x00' * 0x10 +
         b'\xef\xbe\xad\xde'
     )
+
+
+def test_chunk_w_dependencies():
+    class Example(Chunk):
+        sz = StructField('I')
+        data = StringField(Dependency('.sz'), default=b'kebab')
+
+    example = Example()
+
+    assert list(example.get_dependencies().keys()) == [
+        'data.length',
+    ]
+
+    assert example.sz.father == example
+    assert example.sz.value == 5
+    assert example.data.value == b'kebab'
 
 
 def test_proxy_like_format():

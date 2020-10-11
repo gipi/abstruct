@@ -24,9 +24,6 @@ class Stream(object):
 
         init_method()
 
-    def __getattr__(self, name):
-        return getattr(self.obj, name)
-
     def __del__(self):
         if self._need_close:
             self.obj.close()
@@ -54,6 +51,12 @@ class Stream(object):
         self.logger.debug('stream seek() at %08x' % real_offset)
         self.obj.seek(real_offset)
 
+    def read(self, count):
+        return self.obj.read(count)
+
+    def tell(self):
+        return self.obj.tell()
+
     def read_all(self):
         '''Here we try to implement a method that returns all the data possible
         FIXME: find a better way to do this.
@@ -61,7 +64,7 @@ class Stream(object):
         data = []
         is_there_more = True
         while is_there_more:
-            b = self.read(1)
+            b = self.obj.read(1)
             is_there_more = (len(b) != 0)
             data.append(b)
 

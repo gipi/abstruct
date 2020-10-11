@@ -68,6 +68,7 @@ class Dependency:
         self.obj = obj
         self.logger = logging.getLogger(__name__)
         self._hierarchy: List["Field"] = []
+        self._cache = None
 
     def __repr__(self):
         return f'<{self.__class__.__name__}({self.expression})>'
@@ -162,10 +163,49 @@ class Dependency:
 
     def resolve_and_set(self, instance, value):
         """Set the value"""
+        if instance.father is None:
+            self._cache = value
+            return
+
         real_field = self.resolve_field(instance)
         if not hasattr(real_field, 'value'):
             raise ValueError(f'something is wrong with the Dependency resolution!')
         real_field.value = self._do_value(instance, value)
+
+
+class ZeroIfLenZero(Dependency):
+    """This applies to ArrayField and resolve the value as zero if the length
+    of the instance is zero."""
+
+    def _do_resolve(self, instance):
+        from .fields import ArrayField
+        if not isinstance(instance, ArrayField):
+            raise ValueError(
+                f'trying to use {self.__class__.__name__} with an instance of {instance.__class__.__name__} '
+                'instead of ArrayField')
+
+        self.logger.debug(" _do_resolve(%s) [phase=%s]" % (repr(instance), instance._phase))
+
+        if len(instance) == 0 and (instance._phase == ChunkPhase.DONE):
+            return 0
+
+        return super()._do_resolve(instance)
+
+    def _do_value(self, instance, value):
+        from .fields import ArrayField
+
+        self.logger.debug(" _do_value(%s) for instance %s [phase=%s]" % (value, repr(instance), instance._phase))
+
+        if not isinstance(instance, ArrayField):
+            raise ValueError(
+                f'trying to use {self.__class__.__name__} with an instance of {instance.__class__.__name__} '
+                'instead of ArrayField')
+
+        if len(instance) == 0 and (instance._phase == ChunkPhase.DONE  or instance._phase == ChunkPhase.RELAYOUTING):
+            return 0
+
+        return super()._do_value(instance, value)
+
 
 class RatioDependency(Dependency):
 
@@ -195,3 +235,58 @@ class Offset(object):
         sibiling = getattr(obj, other_child)
 
         return getattr(sibiling, field_name).value
+
+
+class PropertyDescriptor(object):
+    """This the glue for dependency management"""
+
+    def __init__(self, name: str, _type: type):
+        self.name = name
+        self.type = _type
+        self._cache = None  # cache the value when there is no father
+
+    def __get__(self, instance: "Field", owner):
+        data = instance.__dict__
+        if self.name not in data:
+            raise AttributeError(f"no '{self.name}' here!")
+
+        value = data[self.name]
+
+        if isinstance(value, Dependency):
+            if instance.father is None:
+                return self._cache
+
+            return value.resolve(instance)
+
+        return value
+
+    def __set__(self, instance: "Field", value):
+        if not isinstance(value, (self.type, Dependency)):
+            raise ValueError(f"A property must be of type {self.type} or a Dependency")
+
+        data = instance.__dict__
+
+        # the first time we add without thinking much
+        if self.name not in data:
+            data[self.name] = value
+            # but save it
+            #if isinstance(value, Dependency):
+            #    instance._dependencies[self.name] = value
+            return
+
+        # this is the old stored value
+        attribute = data[self.name]
+
+        if isinstance(attribute, self.type):
+            data[self.name] = value
+            return
+        elif not isinstance(attribute, Dependency):
+            raise AttributeError(f"{self.name} is not a Dependency nor a {self.type}")
+
+        # now it's possible that we have a dependency
+        # first to try to cache if we don't have a father yet
+        if instance.father is None:
+            self._cache = value
+            return
+
+        attribute.resolve_and_set(instance, value)

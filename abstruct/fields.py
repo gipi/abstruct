@@ -11,12 +11,13 @@ from typing import Dict
 
 from .enum import Compliant
 from .meta import FieldBase, Endianess
-from .properties import Dependency, ChunkPhase
+from .properties import Dependency, ChunkPhase, PropertyDescriptor
 from .streams import Stream, Backend
 from .exceptions import UnpackException, MagicException
 
 
 class Field(FieldBase):
+    """Base class to subclass from"""
 
     def __init__(self, *args, name=None, father=None, default=None, offset=None, size=None, \
                  endianess=Endianess.LITTLE_ENDIAN, compliant=Compliant.INHERIT, is_magic=False):
@@ -35,7 +36,7 @@ class Field(FieldBase):
         self.compliant = compliant
         self.is_magic = is_magic
 
-        # self.init() # FIXME: chose a convention for defining the default, maybe init_default() called from init()
+        self.init()  # FIXME: chose a convention for defining the default, maybe init_default() called from init()
 
     def init(self):
         # here we probably need to initialize the default
@@ -47,51 +48,6 @@ class Field(FieldBase):
     def __str__(self):
         return str(self.value)
 
-    def __getattribute__(self, name):
-        '''If the field is a Field then return directly the 'value' attribute'''
-        field = super().__getattribute__(name)
-        if isinstance(field, Dependency) and self._resolve:
-            self.logger.debug('trying to resolve dependency for \'%s\' from \'%s\'' % (name, self.name))
-            return field.resolve(self)
-
-        return field
-
-    def __setattr__(self, name, value):
-        '''This is not the opposite of __getattribute__
-
-        For more info read the official doc <https://docs.python.org/2/reference/datamodel.html#object.__setattr__>
-        '''
-        # remember that this is going to be called at Chunk construction time, so no
-        # initialization is yet done on the parents of this instance, so you CANNOT resolve
-        # dependencies
-        self.__dict__['_resolve'] = False
-        if isinstance(value, Dependency):
-            self.logger.debug(f'setting dependency for field \'{name}\': {value}')
-            self._dependencies[name] = value
-        try:
-            # the try block is needed in order to catch initialization of variables
-            # for the first time
-            # try to see if is a property
-            field = getattr(self.__class__, name, None)
-            # FIXME: doesn't work if @x.setter is used, do you know why?
-            if isinstance(field, property) and field.fset is not None:
-                return field.fset(self, value)
-            field = super().__getattribute__(name)
-            self.__dict__['_resolve'] = True
-            if isinstance(field, Dependency):
-                self.logger.debug('set for field \'%s\' the value \'%s\' depends on' % (name, value))
-                # real_field = field.resolve_field(self)
-                # real_field.value = value
-                field.resolve_and_set(self, value)
-                return
-
-        except AttributeError:
-            pass
-        finally:
-            self.__dict__['_resolve'] = True  # FIXME
-
-        super().__setattr__(name, value)
-
     def get_backend(self):
         if self.father:
             return self.father.get_backend()
@@ -100,7 +56,8 @@ class Field(FieldBase):
 
     def get_dependencies(self):
         """Return the dictionary containing as key the field"""
-        return self._dependencies
+        instance_dict = self.__dict__
+        return {_k: _v for _k, _v in instance_dict.items() if isinstance(_v, Dependency)}
 
     def is_compliant(self, level):
         '''Returns the compliant'''
@@ -122,19 +79,6 @@ class Field(FieldBase):
         return self.__offset
 
     offset = property(__get_offset, __set_offset)
-
-    def _set_value(self, value) -> None:
-        self._value = value
-
-    def _get_value(self):
-        if self._value is None:
-            old_resolve = self.__dict__['_resolve']
-            self.__dict__['_resolve'] = True
-            self.init()
-            self.__dict__['_resolve'] = old_resolve
-            self._set_value(self.value_from_default())
-
-        return self._value
 
     value = property(
         fget=lambda self: self._get_value(),
@@ -158,18 +102,14 @@ class Field(FieldBase):
         fset=lambda self, value: self._set_raw(value),
     )
 
-    def relayout(self, offset=0):
-        '''
-        self._resolve = False  # we don't want the automagical resolution
-        if not isinstance(self.offset, Dependency):
-            self.offset = None
-            self._phase = ChunkPhase.PROGRESS
-
-        self._resolve = True
-        '''
+    def relayout(self, offset=0, reset=False):
+        self.logger.debug("relayouting %s", self.__class__)
         old_phase = self._phase
         self._phase = ChunkPhase.RELAYOUTING
         self.offset = offset
+
+        if reset:
+            self.init()
 
         self._phase = old_phase
 
@@ -202,11 +142,9 @@ class StructField(Field):
 
     # FIXME: make the enum internal mechanism overridable so to have arch-dependent-enums
     def __init__(self, format, default=0, equals_to=None, enum=None, **kw):  # decide between default and equals_to
-        super().__init__(default=default if not equals_to else equals_to, **kw)
         self.format = format
         self.enum = enum
-
-        self.init()
+        super().__init__(default=default if not equals_to else equals_to, **kw)
 
     def _get_encoder(self):
         return str if isinstance(self.value, bytes) else hex
@@ -241,9 +179,7 @@ class StructField(Field):
         return self._unpack(raw)
 
     def _set_value(self, value) -> None:
-        super()._set_value(value)
-
-        raw = struct.pack(self.get_format(), self._value if not self.enum else self._value.value)
+        raw = struct.pack(self.get_format(), value if not self.enum else value.value)
         # TODO: factorize
         self.get_backend().seek(self.offset if self.offset is not None else 0)
         self.get_backend().write(raw)
@@ -317,23 +253,27 @@ class StructField(Field):
 class StringField(Field):
     """Represent a contiguous chunk of bytes."""
 
-    def __init__(self, n=0, **kw):
-        super().__init__(**kw)
-        self._n = n
+    length = PropertyDescriptor('length', int)
 
-        self.init()
+    def __init__(self, n=None, **kw):
+        if n is None and 'default' not in kw:
+            raise ValueError(f"StringField must have 'n' or 'default' indicated!")
+
+        self.length = n or len(kw['default'])
+
+        super().__init__(**kw)
 
     def __repr__(self):
         return '<%s(%s)>' % (self.__class__.__name__, repr(self.value))
 
     def __len__(self):
-        return len(self.value)
+        return self.length
 
     def value_from_default(self):
-        return b'\x00' * self._n if not self.default else self.default
+        return b'\x00' * self.length if not self.default else self.default
 
     def _get_size(self):
-        return self._n
+        return self.length
 
     @lru_cache
     def _get_value(self):
@@ -346,17 +286,15 @@ class StringField(Field):
         """The StringField has the size as a parameter and we must follow that indication
         unless it's a Dependency, in that case we are going to write back the value where necessary."""
         length = len(value)
-        if '_n' not in self.get_dependencies() and length != self._n:
-            raise ValueError(f'you are trying to set a value with the wrong size (that is {self._n} bytes)')
-
-        super()._set_value(value)
+        if 'length' not in self.get_dependencies() and length != self.length:
+            raise ValueError(f'you are trying to set a value with the wrong size (that is {self.length} bytes)')
 
         raw = value  # TODO: factorize
         self.get_backend().seek(self.offset if self.offset is not None else 0)
         self.get_backend().write(raw)
 
         # TODO: do this only on Dependency?
-        self._n = len(self.value)
+        self.length = length
 
         self._get_value.cache_clear()
         value = self.value
@@ -441,10 +379,10 @@ class ArrayField(Field):
 
         return value
 
-    def size(self):
+    def _get_size(self):
         size = 0
         for element in self.value:
-            size += element.size()
+            size += element.size
 
         return size
 

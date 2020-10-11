@@ -36,20 +36,7 @@ class Chunk(Field, metaclass=MetaChunk):
     """
 
     def __init__(self, filepath=None, **kwargs):
-        self.stream = Stream(filepath) if filepath is not None else filepath
         super().__init__(**kwargs)
-
-        # now we have setup all the fields necessary and we can unpack if
-        # some data is passed with the constructor
-        if self.stream:
-            self.logger.debug('unpacking \'%s\' from %s' % (self.__class__.__name__, self.stream))
-            self.unpack(self.stream)
-        else:
-            # for name in self.__class__._meta.fields:
-            #    getattr(self, name).init()  # FIXME: understand init() logic :P
-
-            self.relayout()  # it's recursive, maybe act based on state
-            self.init()
 
     def get_ordered_fields_name(self) -> List[str]:
         return self._meta.fields
@@ -108,8 +95,7 @@ class Chunk(Field, metaclass=MetaChunk):
         return msg
 
     def init(self):
-        for _, field in self.get_fields():
-            field.init()
+        self.relayout(reset=True)  # it's recursive, maybe act based on state
 
     @property
     def root(self):
@@ -148,7 +134,7 @@ class Chunk(Field, metaclass=MetaChunk):
 
         return result
 
-    def relayout(self, offset=0):
+    def relayout(self, offset=0, reset=False):
         '''This method triggers the chunk's children to reset the offsets
         and the phase in order to pack correctly.
 
@@ -156,12 +142,12 @@ class Chunk(Field, metaclass=MetaChunk):
         of the chunks.'''
         phase_old = self._phase
         self._phase = ChunkPhase.RELAYOUTING
-        self.offset = offset
+        self.offset = self.offset or offset
 
         size = 0
         for field_name, field_instance in self.get_fields():
-            self.logger.debug('relayouting %s.%s' % (self.__class__.__name__, field_name))
-            size += field_instance.relayout(offset=offset + size)
+            self.logger.debug('relayouting %s.%s at offset %x', self.__class__.__name__, field_name, offset)
+            size += field_instance.relayout(offset=self.offset + size, reset=reset)
 
         self._phase = phase_old
 

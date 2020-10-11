@@ -297,8 +297,8 @@ class FixedLengthString(StringField):
         super().__init__(n=length)
 
     def _set_value(self, value) -> None:
-        if len(value) != self._n:
-            raise ValueError(f"class '{self.__class__.__name__}' can only accept binary strings of length {self._n}")
+        if len(value) != self.length:
+            raise ValueError(f"class '{self.__class__.__name__}' can only accept binary strings of length {self.length}")
 
         super()._set_value(value)
 

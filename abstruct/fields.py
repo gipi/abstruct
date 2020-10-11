@@ -428,14 +428,12 @@ class ArrayField(Field):
 
 
 class SelectField(Field):
-    '''Allow to select the kind of final field based on condition
-    in the parent chunk. You need to pass the name of the field
-    to use as key and a dictionary with the mapping between type
-    and field. You can use Type.DEFAULT as a default.
+    """Allow to select the kind of final field based on condition in the parent chunk.
+    You need to pass the name of the field to use as key and a dictionary with the mapping
+    between type and field. You can use Type.DEFAULT as a default.
 
-    Like in the following example we have a format the use the first 4 bytes
-    to indicate what follows: for value zero you have another 4 bytes, otherwise
-    you have a ten bytes string
+    Like in the following example we have a format the use the first 4 bytes to indicate what
+    follows: for value zero you have another 4 bytes, otherwise you have a ten bytes string
 
         class DummyType(Flag):
             FIRST = 0
@@ -449,27 +447,38 @@ class SelectField(Field):
         class DummyChunk(Chunk):
             type = fields.BitField(DummyType, 'I')
             data = fields.SelectField('type', type2field)
-    '''
+    """
     class Type(Flag):
         DEFAULT = auto()
 
     def __init__(self, key, mapping, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._key = key
         self._mapping = mapping
+        self._field = None
+
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}{self._field!r}>'
 
-    def init(self):
-        pass
+    def value_from_default(self):
+        key = self.default if self.default in self._mapping else SelectField.Type.DEFAULT
+        self._field = self._mapping[key]
+
+        return self._field.value_from_default()
 
     def _get_value(self):
         return self._field.value
 
+    def _set_value(self, value):
+        self._field.value = value
+
     @property
-    def raw(self):
+    def raw(self) -> bytes:
         return self._field.raw
+
+    def _get_size(self) -> int:
+        return self._field.size
 
     def unpack(self, stream):
         self.logger.debug('resolving key \'%s\'' % self._key)
